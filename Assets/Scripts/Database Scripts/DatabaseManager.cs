@@ -162,17 +162,17 @@ public class DatabaseManager : MonoBehaviour
                 connection.Insert(new Garment { Name = "Converse blancas", Type = "Shoes", ImagePath = "C:/Users/lrcor/Desktop/DEV/SOFTWARE/DresSnap_DEV/TestPhotos/converseblancas.PNG" });
                 connection.Insert(new Garment { Name = "Vans negras", Type = "Shoes", ImagePath = "C:/Users/lrcor/Desktop/DEV/SOFTWARE/DresSnap_DEV/TestPhotos/vansnegras.PNG" });
 
-                connection.Insert(new Outfit { TopID = 1, BottomID = 8, ShoesID = NO_GARMENT_ID });
+                connection.Insert(new Outfit { TopID = 1, BottomID = 8, ShoesID = 14 });
                 connection.Insert(new Outfit { TopID = 2, BottomID = 12, ShoesID = 16 });
                 connection.Insert(new Outfit { TopID = 3, BottomID = 9, ShoesID = 17 });
 
                 connection.Insert(new Outfit { TopID = 4, BottomID = 11, ShoesID = 14 });
-                connection.Insert(new Outfit { TopID = 5, BottomID = NO_GARMENT_ID, ShoesID = 16 });
+                connection.Insert(new Outfit { TopID = 5, BottomID = 13, ShoesID = 16 });
                 connection.Insert(new Outfit { TopID = 6, BottomID = 10, ShoesID = 17 });
 
-                connection.Insert(new Outfit { TopID = 6, BottomID = 8, ShoesID = 14 });
-                connection.Insert(new Outfit { TopID = 7, BottomID = NO_GARMENT_ID, ShoesID = NO_GARMENT_ID });
-                //connection.Insert(new Outfit { TopID = 7, BottomID = 12, ShoesID = 15 });
+                connection.Insert(new Outfit { TopID = 6, BottomID = 8, ShoesID = 17 });
+                connection.Insert(new Outfit { TopID = 7, BottomID = 12, ShoesID = 16 });
+                connection.Insert(new Outfit { TopID = 7, BottomID = 12, ShoesID = 15 });
             }
             catch (SQLiteException e)
             {

@@ -338,7 +338,7 @@ public class GalleryLoader : MonoBehaviour
             if (targetTextComponent != null)
             {
                 // Asigna el texto predeterminado al componente de texto
-                targetTextComponent.text = "Texto predeterminado";
+                targetTextComponent.text = "Default text";
             }
             else
             {
