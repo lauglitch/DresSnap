@@ -30,7 +30,7 @@ public static class AndroidLogger
 
     public static void WriteLog(string text)
     {
-        OnLogWritten?.Invoke(text);
+        OnLogWritten?.Invoke("Android Logger: " + text);
     }
 }
 

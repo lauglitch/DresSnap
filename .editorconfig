@@ -1,0 +1,7 @@
+﻿[*.cs]
+
+# CS0436: El tipo entra en conflicto con un tipo importado
+dotnet_diagnostic.CS0436.severity = silent
+
+# CS4014: Dado que no se esperaba esta llamada, la ejecución del método actual continuará antes de que se complete la llamada
+dotnet_diagnostic.CS4014.severity = silent

@@ -26,7 +26,7 @@ public class GalleryImageHandler : MonoBehaviour
             {
                 LoadImage(path);
                 garment.ImagePath = path; // Guardar la ruta de la imagen en el atributo ImagePath de GarmentDB en la base de datos
-                garment.InsertGarmentDB(garment); // Guardar los cambios en la base de datos SQLite
+                garment.InsertGarment(garment); // Guardar los cambios en la base de datos SQLite
             }
         }, "Selecciona una imagen");
     }

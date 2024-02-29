@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 public class AndroidLoggerText : MonoBehaviour
 {
-    private Text myText;
+    public Text myText;
 
     private void Awake()
     {

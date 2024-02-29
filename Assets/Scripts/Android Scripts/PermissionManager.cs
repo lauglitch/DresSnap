@@ -20,18 +20,18 @@ public class PermissionManager : MonoBehaviour
             if (Permission.HasUserAuthorizedPermission(Permission.Camera))
             {
                 // Los permisos de cámara fueron otorgados
-                Debug.Log("Camera permissions granted.");
+                Logger.Log(LogLevel.Success, "Camera permissions granted.");
             }
             else
             {
                 // Los permisos de cámara no fueron otorgados
-                Debug.Log("Camera permissions not granted.");
+                Logger.Log(LogLevel.Warning, "Camera permissions not granted.");
             }
         }
         else
         {
             // Los permisos de cámara ya han sido otorgados
-            Debug.Log("Camera permits have already been granted.");
+            Logger.Log(LogLevel.Success, "Camera permits have already been granted.");
         }
     }
 }
