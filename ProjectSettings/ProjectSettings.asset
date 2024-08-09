@@ -820,11 +820,11 @@ PlayerSettings:
   apiCompatibilityLevel: 6
   activeInputHandler: 0
   windowsGamepadBackendHint: 0
-  cloudProjectId: 
+  cloudProjectId: 3495205e-3581-4261-98da-6ccfb63bd7ea
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: 
-  organizationId: 
+  projectName: DresSnap
+  organizationId: lauglitch
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   playerDataPath: 

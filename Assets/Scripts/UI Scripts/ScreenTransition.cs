@@ -6,7 +6,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections;
-
+public enum GarmentType
+{
+    Top,
+    Bottom,
+    Shoes
+}
 public class ScreenTransition : MonoBehaviour
 {
     public GameObject mainMenuPanelCanvas;
@@ -27,6 +32,9 @@ public class ScreenTransition : MonoBehaviour
     public GameObject topName_Input;
     public GameObject bottomName_Input;
     public GameObject shoesName_Input;
+    private bool topNameInputInteractable = true;
+    private bool bottomNameInputInteractable = true;
+    private bool shoesNameInputInteractable = true;
     //
 
     // Only on See Menu
@@ -63,11 +71,14 @@ public class ScreenTransition : MonoBehaviour
     private string bottom_Path;
     private string shoes_Path;
 
-    public GalleryLoader galleryLoader;
+    private DatabaseManager databaseManager;
+    private DataManager dataManager;
+    private GalleryLoader galleryLoader;
+    private PopupManager popupManager;
 
     private void Awake()
     {
-
+      
     }
 
     void Start()
@@ -84,6 +95,26 @@ public class ScreenTransition : MonoBehaviour
 
         currentPageIndex = 0;
         outfitsPerPage = 3;
+
+        databaseManager = CoreManager.Instance.GetDatabaseManager();
+        dataManager = CoreManager.Instance.GetDataManager();
+        galleryLoader = CoreManager.Instance.GetGalleryLoader();
+        popupManager = CoreManager.Instance.GetPopupManager();
+
+        if (databaseManager == null)
+        {
+            Debug.LogError("Could not get DatabaseManager from CoreManager.Instance");
+        }
+        if (dataManager == null)
+        {
+            Debug.LogError("Could not get DataManager from CoreManager.Instance");
+        }
+        if (popupManager == null)
+        {
+            Debug.LogError("Could not get PopupManager from CoreManager.Instance");
+        }
+
+        Logger.Log(LogLevel.DeepTest, "ScreenTransition started.");
     }
 
     // ----------------------------------------------------------------------------------
@@ -91,10 +122,10 @@ public class ScreenTransition : MonoBehaviour
     public void SeeOutfits_MainMenuButton()
     {
         // Check if there are outfits on database
-        if (DatabaseManager.outfitsQueue.Count == 0)
+        if (dataManager.outfitsQueue.Count == 0)
         {
             noOutfitsOnDBPopup.SetActive(true);
-            Logger.Log(LogLevel.Warning, "There are no outfits on database");
+            Logger.Log(LogLevel.Warning, Constants.NO_OUTFITS_DB);
         }
         else
         {
@@ -105,10 +136,10 @@ public class ScreenTransition : MonoBehaviour
 
             mainMenuPanelCanvas.SetActive(false);
 
-            totalPages = (int)Math.Ceiling((double)DatabaseManager.outfitsQueue.Count / outfitsPerPage);
-            int lastPageOutfits = DatabaseManager.outfitsQueue.Count % outfitsPerPage;
+            totalPages = (int)Math.Ceiling((double)dataManager.outfitsQueue.Count / outfitsPerPage);
+            int lastPageOutfits = dataManager.outfitsQueue.Count % outfitsPerPage;
 
-            Logger.Log(LogLevel.DeepTest, "Totalpages on See Menu: " + totalPages);
+            Logger.Log(LogLevel.Test, Constants.TOTAL_PAGES_SEE_MENU + totalPages);
 
             LoadOutfitsForCurrentPage();
         }       
@@ -116,21 +147,33 @@ public class ScreenTransition : MonoBehaviour
 
     public void CreateOutfit_MainMenuButton()
     {
-        galleryLoader.SetDefaultImageAndText(targetImages: galleryLoader.targetCreateImages, targetTexts: new List<GameObject>());
+        //foreach (Image image in galleryLoader.targetCreateImages)
+        //Debug.Log("ScreenTransition - targetCreateImages: " + image);
 
+        //galleryLoader.targetCreateImages.ForEach(image => Debug.Log("CreateOutfit_MainMenuButton - targetCreateImages: " + image.gameObject.name));
+        
+        if (galleryLoader != null)
+        {
+            List<Image> createImages = galleryLoader.targetCreateImages;
+            galleryLoader.SetDefaultImageAndText(targetImages: createImages, targetTexts: new List<GameObject>());
+        }
+        else
+        {
+            Debug.LogError("GalleryLoader reference is null!");
+        }
+        
         createOutfitCanvas.SetActive(true);
 
         mainMenuPanelCanvas.SetActive(false);
     }
 
-    // TODO: should be async?
-    public async void PickOutfit_MainMenuButtonAsync()
+    public void PickOutfit_MainMenuButtonAsync()
     {
         // Check if there are outfits on database
-        if (DatabaseManager.outfitsQueue.Count == 0)
+        if (dataManager.outfitsQueue.Count == 0)
         {
             noOutfitsOnDBPopup.SetActive(true);
-            Logger.Log(LogLevel.Warning, "There are no outfits on database");
+            Logger.Log(LogLevel.Warning, Constants.NO_OUTFITS_DB);
         }
         else
         {
@@ -141,47 +184,59 @@ public class ScreenTransition : MonoBehaviour
             Outfit rndOutfit = DatabaseManager.PickRandomLocalOutfit();
             int rndTopID = rndOutfit.TopID, rndBottomID = rndOutfit.BottomID, rndShoesID = rndOutfit.ShoesID;
             Garment rndTop, rdnBottom, rdnShoes;
-            string topName = DatabaseManager.UNDEFINED, topImagePath = DatabaseManager.UNDEFINED, bottomName = DatabaseManager.UNDEFINED,
-                bottomImagePath = DatabaseManager.UNDEFINED, shoesName = DatabaseManager.UNDEFINED, shoesImagePath = DatabaseManager.UNDEFINED;
-
+            string topName = Constants.UNDEFINED, topImagePath = Constants.UNDEFINED, bottomName = Constants.UNDEFINED,
+                bottomImagePath = Constants.UNDEFINED, shoesName = Constants.UNDEFINED, shoesImagePath = Constants.UNDEFINED;
 
             if (rndTopID != -1)
             {
-                DatabaseManager.garmentsDictionary.TryGetValue(rndOutfit.TopID, out rndTop);
-
-                topName = rndTop.Name;
-                topImagePath = rndTop.ImagePath;
-            }
-            else
-            {
-                // This outfits has no top garment
+                rndTop = dataManager.garmentsList.FirstOrDefault(g => g.GarmentID == rndOutfit.TopID);
+                if (rndTop != null)
+                {
+                    topName = rndTop.Name;
+                    topImagePath = rndTop.ImagePath;
+                }
+                else
+                {
+                    // Este atuendo no tiene prenda superior
+                }
             }
 
             if (rndBottomID != -1)
             {
-                DatabaseManager.garmentsDictionary.TryGetValue(rndOutfit.BottomID, out rdnBottom);
-
-                bottomName = rdnBottom.Name;
-                bottomImagePath = rdnBottom.ImagePath;
-            }
-            else
-            {
-                // This outfits has no bottom garment
+                rdnBottom = dataManager.garmentsList.FirstOrDefault(g => g.GarmentID == rndOutfit.BottomID);
+                if (rdnBottom != null)
+                {
+                    bottomName = rdnBottom.Name;
+                    bottomImagePath = rdnBottom.ImagePath;
+                }
+                else
+                {
+                    // Este atuendo no tiene prenda inferior
+                }
             }
 
             if (rndShoesID != -1)
             {
-                DatabaseManager.garmentsDictionary.TryGetValue(rndOutfit.ShoesID, out rdnShoes);
-
-                shoesName = rdnShoes.Name;
-                shoesImagePath = rdnShoes.ImagePath;
+                rdnShoes = dataManager.garmentsList.FirstOrDefault(g => g.GarmentID == rndOutfit.ShoesID);
+                if (rdnShoes != null)
+                {
+                    shoesName = rdnShoes.Name;
+                    shoesImagePath = rdnShoes.ImagePath;
+                }
+                else
+                {
+                    // Este atuendo no tiene calzado
+                }
             }
+
+            // ...
+
             else
             {
                 // This outfits has no shoes garment
             }
 
-            Logger.Log(LogLevel.DeepTest, "Random picked outfit: " + Logger.OutfitString(rndOutfit));
+            Logger.Log(LogLevel.Test, Constants.RANDOM_PICKED_OUTFIT + Logger.OutfitString(rndOutfit));
 
             // DELETE: this is just for testing data
             /*String[] nameArray = { "Camiseta Kiss",  "Pantalones encerados", "Botas militares" }; 
@@ -193,7 +248,6 @@ public class ScreenTransition : MonoBehaviour
 
             String[] nameArray = { topName, bottomName, shoesName };
             String[] pathArray = { topImagePath, bottomImagePath, shoesImagePath };
-
 
             // Show canvas with selected outfit
             galleryLoader.ProcessLocalData(nameArray, pathArray);
@@ -222,20 +276,77 @@ public class ScreenTransition : MonoBehaviour
     // ------------------------------- CREATE OUTFIT MENU BUTTONS 
     public void Create_CreateMenuButton(String type)
     {
+        string imagePath = Constants.UNDEFINED;
+        bool imagePathExists;
+
         switch (type)
         {
-            case "Top":
-                galleryLoader.LoadImageFromExplorer("Top");
+            case Constants.TOP_FIELD:
+                imagePath = galleryLoader.LoadImageFromExplorer(Constants.TOP_FIELD);
+
+                if (dataManager != null)
+                {
+                    // Accede a garmentsList aquí
+                }
+                else
+                {
+                    Logger.Log(LogLevel.Warning, "dataManager is null");
+                }
+
+                imagePathExists = dataManager.garmentsList.Any(garment => garment.ImagePath.Equals(imagePath));
+
+                if (imagePathExists)
+                {
+                    foreach (Garment garment in dataManager.garmentsList)
+                        if (garment.ImagePath.Equals(imagePath))
+                        {
+                            topNameInputInteractable = false;
+                        }
+                }
+                else if (!imagePath.Equals(Constants.UNDEFINED))
+                {
+                    topNameInputInteractable = true;
+                }
+
                 break;
-            case "Bottom":
-                galleryLoader.LoadImageFromExplorer("Bottom");
+            case Constants.BOTTOM_FIELD:
+                imagePath = galleryLoader.LoadImageFromExplorer(Constants.BOTTOM_FIELD);
+
+                imagePathExists = dataManager.garmentsList.Any(garment => garment.ImagePath.Equals(imagePath));
+
+                if (imagePathExists)
+                {
+                    foreach (Garment garment in dataManager.garmentsList)
+                        if (garment.ImagePath.Equals(imagePath))
+                            bottomName_Input.GetComponent<TMP_InputField>().interactable = false;
+                }
+                else
+                    bottomName_Input.GetComponent<TMP_InputField>().interactable = true;
+
                 break;
-            case "Shoes":
-                galleryLoader.LoadImageFromExplorer("Shoes");
+            case Constants.SHOES_FIELD:
+                imagePath = galleryLoader.LoadImageFromExplorer(Constants.SHOES_FIELD);
+
+                imagePathExists = dataManager.garmentsList.Any(garment => garment.ImagePath.Equals(imagePath));
+
+                if (imagePathExists) 
+                { 
+                    foreach (Garment garment in dataManager.garmentsList)
+                        if (garment.ImagePath.Equals(imagePath))
+                            shoesName_Input.GetComponent<TMP_InputField>().interactable = false;
+                }
+                else
+                    shoesName_Input.GetComponent<TMP_InputField>().interactable = true;
+
                 break;
             default:
                 break;
         }
+
+        if (imagePath.Equals(Constants.UNDEFINED))
+            Logger.Log(LogLevel.Warning, ("imagePath not obtained while Image Loading"));
+        else
+            Logger.Log(LogLevel.Test, ("Image loaded on " + type + ": " + imagePath));
     }
 
     public void CloseMenu_CreateMenuButton()
@@ -245,13 +356,15 @@ public class ScreenTransition : MonoBehaviour
 
     public async void SaveOutfit_CreateMenuButton()
     {
-        bool everythingOk = true;
+        bool canInsertOutfit = true;
+        string validationReturnMessage = "";
 
         top_Path = galleryLoader.createTopImagePath;
         bottom_Path = galleryLoader.createBottomImagePath;
         shoes_Path = galleryLoader.createShoesImagePath;
 
         AndroidLogger.WriteLog("\nTopPath: " + top_Path + "\nBottom_Path: " + bottom_Path + "\nShoes_Path: " + shoes_Path);
+        Logger.Log(LogLevel.DeepTest, "CreateMenu paths \nTopPath: " + top_Path + "\nBottom_Path: " + bottom_Path + "\nShoes_Path: " + shoes_Path);
 
         try
         {
@@ -259,122 +372,187 @@ public class ScreenTransition : MonoBehaviour
             string topName = topName_Input.GetComponent<TMP_InputField>().text;
             string bottomName = bottomName_Input.GetComponent<TMP_InputField>().text;
             string shoesName = shoesName_Input.GetComponent<TMP_InputField>().text;
+            int[] garmentIDs = { -1, -1, -1 };
 
             Garment topGarment = new Garment
             {
                 Name = topName,
                 Type = "Top",
-                ImagePath = string.IsNullOrEmpty(top_Path) ? DatabaseManager.NO_IMAGE_PATH : top_Path
+                ImagePath = string.IsNullOrEmpty(top_Path) ? Constants.NO_IMAGE_PATH : top_Path
             };
-
             Garment bottomGarment = new Garment
             {
                 Name = bottomName,
                 Type = "Bottom",
-                ImagePath = string.IsNullOrEmpty(bottom_Path) ? DatabaseManager.NO_IMAGE_PATH : bottom_Path
+                ImagePath = string.IsNullOrEmpty(bottom_Path) ? Constants.NO_IMAGE_PATH : bottom_Path
             };
-
             Garment shoesGarment = new Garment
             {
                 Name = shoesName,
                 Type = "Shoes",
-                ImagePath = string.IsNullOrEmpty(shoes_Path) ? DatabaseManager.NO_IMAGE_PATH : shoes_Path
+                ImagePath = string.IsNullOrEmpty(shoes_Path) ? Constants.NO_IMAGE_PATH : shoes_Path
             };
-            //Garment topGarment = new Garment { Name = topName_Input.GetComponent<TMP_InputField>().text, Type = "Top", ImagePath = top_Path };
-            //Garment bottomGarment = new Garment { Name = bottomName_Input.GetComponent<TMP_InputField>().text, Type = "Bottom", ImagePath = bottom_Path };
-            //Garment shoesGarment = new Garment { Name = shoesName_Input.GetComponent<TMP_InputField>().text, Type = "Shoes", ImagePath = shoes_Path };
 
-            // If garments are not null, add them to a List<Garment>
-            if (!DatabaseManager.GarmentIsEmpty(topGarment))
-                garmentList.Add(topGarment);
-            else
-                Logger.Log(LogLevel.Warning, "Top garment is empty. Not saving or associating with an outfit.");
-            if (!DatabaseManager.GarmentIsEmpty(bottomGarment))
-                garmentList.Add(bottomGarment);
-            else
-                Logger.Log(LogLevel.Warning, "Bottom garment is empty. Not saving or associating with an outfit.");
-            if (!DatabaseManager.GarmentIsEmpty(shoesGarment))
-                garmentList.Add(shoesGarment);
-            else
-                Logger.Log(LogLevel.Warning, "Shoes garment is empty. Not saving or associating with an outfit.");
+            garmentList.Add(topGarment);
+            garmentList.Add(bottomGarment);
+            garmentList.Add(shoesGarment);
 
-            // Check if complete outfit is valid
-            bool outfitInfoValid = await DatabaseManager.ValidateOutfitInfoAsync(garmentList);
+            validationReturnMessage = await DatabaseManager.ValidateOutfitInfoAsync(garmentList);
 
-            // If all validations pass, proceed with inserting garments and outfit
-            if (outfitInfoValid)
+            // If all garments are valid and outfit is not duplicated, proceed with inserting garments and outfit
+            if (validationReturnMessage.Equals(Constants.VALID_OUTFIT))
             {
-                List<int> garmentIDs = new List<int>();
+                bool canInsertGarment = false; // if garment currently exists, it won't be inserted
 
-                // Insert Garment/s
-                foreach (var garment in garmentList)
+                // Associate original IDs to the 3 Garments to validate the complete Outfit
+                garmentList[0].GarmentID = DatabaseManager.GetGarmentIDByImagePath(garmentList[0].ImagePath);
+                garmentList[1].GarmentID = DatabaseManager.GetGarmentIDByImagePath(garmentList[1].ImagePath);
+                garmentList[2].GarmentID = DatabaseManager.GetGarmentIDByImagePath(garmentList[2].ImagePath);
+
+                // Create a backup of the local database
+                databaseManager.BackupData();
+
+                // If the outfit is not a duplicate, proceed with inserting garments and outfit
+                if (DatabaseManager.IsOutfitDuplicate(garmentList).Equals(Constants.FALSE))
                 {
-                    int garmentID = await DatabaseManager.InsertGarmentAsync(garment);
-
-                    if (garmentID != -1)
+                    try
                     {
-                        garmentIDs.Add(garmentID);
+                        // Insert Garment/s
+                        foreach (Garment garment in garmentList)
+                        {
+                            int idIndex = -1;
+
+                            if (garment.Type.Equals(Constants.TOP_FIELD))
+                                idIndex = 0;
+                            else if (garment.Type.Equals(Constants.BOTTOM_FIELD))
+                                idIndex = 1;
+                            else if (garment.Type.Equals(Constants.SHOES_FIELD))
+                                idIndex = 2;
+                            else
+                                Logger.Log(LogLevel.Error, Constants.NO_GARMENT_TYPE_ERROR);
+
+                            if (DatabaseManager.areGarmentsGoingToBeSaved[idIndex])
+                                canInsertGarment = true;
+                            else
+                                canInsertGarment = false;
+
+                            try
+                            {
+                                if (canInsertGarment)
+                                {
+                                    int garmentID = await DatabaseManager.InsertGarmentAsync(garment);
+
+                                    if (garmentID != -1)
+                                        garmentIDs[idIndex] = garmentID;
+                                    else
+                                    {
+                                        Logger.Log(LogLevel.Error, Constants.GARMENT_VALIDATION_FAILED_ERROR);
+                                        canInsertOutfit = false;
+                                        break;  // Exit the loop if any garment insertion fails
+                                    }
+                                }
+                                else
+                                {
+                                    garmentIDs[idIndex] = DatabaseManager.GetGarmentIDByImagePath(garment.ImagePath);
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                Logger.Log(LogLevel.Error, Constants.GARMENT_INSERTION_FAILED_ERROR + e);
+                            }
+                        }
+
+                        // If all garments are inserted successfully, insert the outfit
+                        if (canInsertOutfit)
+                        {
+                            Outfit newOutfit = new Outfit
+                            {
+                                TopID = garmentList[0].GarmentID,
+                                BottomID = garmentList[1].GarmentID,
+                                ShoesID = garmentList[2].GarmentID
+                            };
+
+                            int outfitID = await DatabaseManager.InsertOutfitAsync(newOutfit);
+
+                            newOutfit.OutfitID = outfitID;
+
+                            canInsertOutfit = (outfitID != -1);
+
+                            // Show success message
+                            outfitSavedPopup.GetComponentInChildren<TMP_Text>().text = Constants.OUTFIT_SAVED;
+                        }
+                        else
+                        {
+                            // Log an error if outfit validation fails
+                            Logger.Log(LogLevel.Error, Constants.OUTFIT_VALIDATION_FAILED_ERROR);
+                        }
                     }
-                    else
+                    catch (Exception e)
                     {
-                        Logger.Log(LogLevel.Error, "Garment info validation failed.");
-                        everythingOk = false;
-                        break;  // Exit the loop if any garment insertion fails
+                        // Log an error if there is an exception during the process
+                        Logger.Log(LogLevel.Error, Constants.GARMENT_INSERTION_FAILED_ERROR + e.Message);
                     }
-                }
-
-                // Insert Outfit
-                if (everythingOk)
-                {
-                    Outfit newOutfit = new Outfit
-                    {
-                        TopID = garmentIDs.Count > 0 ? garmentIDs[0] : DatabaseManager.NO_GARMENT_ID,
-                        BottomID = garmentIDs.Count > 1 ? garmentIDs[1] : DatabaseManager.NO_GARMENT_ID,
-                        ShoesID = garmentIDs.Count > 2 ? garmentIDs[2] : DatabaseManager.NO_GARMENT_ID
-                    };
-
-                    int outfitID = await DatabaseManager.InsertOutfitAsync(newOutfit);
-                    newOutfit.OutfitID = outfitID;
-
-                    everythingOk = (outfitID != -1);
-
-                    // IMPORTANT TO UPDATE LOCAL DATA STRUCTURES TO WORK WITH CURRENT DATA
-                    DatabaseManager.UpdateLocalDataStructures();
                 }
                 else
                 {
-                    everythingOk = false;
-                    Logger.Log(LogLevel.Error, "Outfit info validation failed.");
-                }
-            } else
-            {
-                everythingOk = false;
-            }
+                    // Rollback the local database to the backup state
+                    databaseManager.RollbackData();
 
+                    // Show an error message for a duplicated outfit
+                    outfitSavedPopup.GetComponentInChildren<TMP_Text>().text = Constants.DUPLICATED_OUTFIT_ERROR;
+                    canInsertOutfit = false;
+                }
+            }
+            else if (validationReturnMessage.Equals(Constants.MISSING_GARMENTS))
+            {
+                // Show an error message for missing garments
+                outfitSavedPopup.GetComponentInChildren<TMP_Text>().text = Constants.MISSING_GARMENTS_ERROR;
+                canInsertOutfit = false;
+            }
+            else if (validationReturnMessage.Equals(Constants.SAME_IMAGE))
+            {
+                // Show an error message for garments with the same image
+                outfitSavedPopup.GetComponentInChildren<TMP_Text>().text = Constants.SAME_GARMENT_IMAGE_ERROR;
+                canInsertOutfit = false;
+            }
+            else if (validationReturnMessage.Equals(Constants.EXISTING_GARMENT_NAME_ERROR))
+            {
+                // Show an error message for garments with existing name
+                outfitSavedPopup.GetComponentInChildren<TMP_Text>().text = Constants.EXISTING_GARMENT_NAME_ERROR;
+                canInsertOutfit = false;
+            }
+            else if (validationReturnMessage.Equals(Constants.EMPTY_GARMENT_NAME_ERROR))
+            {
+                // Show an error message for garments with repeated image
+                outfitSavedPopup.GetComponentInChildren<TMP_Text>().text = Constants.EMPTY_GARMENT_NAME_ERROR;
+                canInsertOutfit = false;
+            }
+            // This error should not be shown to user
+            else if (validationReturnMessage.Equals(Constants.NO_GARMENT_TYPE_ERROR))
+            {
+                // Show an error message for garments with the same image
+                outfitSavedPopup.GetComponentInChildren<TMP_Text>().text = Constants.NO_GARMENT_TYPE_ERROR;
+                canInsertOutfit = false;
+            }
         }
         catch (Exception e)
         {
-            Logger.Log(LogLevel.Error, $"Error recollecting info about new outfit: {e.Message}");
-            everythingOk = false;
+            // Log an error if there is an exception during the process
+            Logger.Log(LogLevel.Error, Constants.INVALID_USER_OUTFIT_ERROR + e.Message);
+            canInsertOutfit = false;
         }
 
-        if (everythingOk)
-        {
-            outfitSavedPopup.GetComponentInChildren<TMP_Text>().text = "Outfit saved successfully";
-        }
-        else
-        {
-            outfitSavedPopup.GetComponentInChildren<TMP_Text>().text = "Error saving Outfit. Try again";
-        }
+        // IMPORTANT TO UPDATE LOCAL DATA STRUCTURES TO WORK WITH CURRENT DATA
+        await DatabaseManager.UpdateLocalDataStructures();
 
+        // Show the outfit saved popup
         outfitSavedPopup.GetComponent<PopupManager>().ShowPopup();
-
-        //await DatabaseManager.PrintAllOutfitsOnLocal();
-        //await DatabaseManager.PrintAllGarmentsOnLocal();
     }
 
     public void ok_CreateMenuButton()
     {
+        // TODO: Reset Images and Inputs on Create Menu
+
         outfitSavedPopup.GetComponent<PopupManager>().HidePopup();
     }
 
@@ -402,19 +580,19 @@ public class ScreenTransition : MonoBehaviour
         switch (row)
         {
             case 1:
-                Logger.Log(LogLevel.DeepTest, "Outfit " + outfitIdsArray[0] + " selected to edit");
+                //Logger.Log(LogLevel.DeepTest, "Outfit " + outfitIdsArray[0] + " selected to edit");
                 LoadOutfitForPopups(outfitIdsArray[0], popupName);
                 break;
             case 2:
-                Logger.Log(LogLevel.DeepTest, "Outfit " + outfitIdsArray[1] + " selected to edit");
+                //Logger.Log(LogLevel.DeepTest, "Outfit " + outfitIdsArray[1] + " selected to edit");
                 LoadOutfitForPopups(outfitIdsArray[1], popupName);
                 break;
             case 3:
-                Logger.Log(LogLevel.DeepTest, "Outfit " + outfitIdsArray[2] + " selected to edit");
+                //Logger.Log(LogLevel.DeepTest, "Outfit " + outfitIdsArray[2] + " selected to edit");
                 LoadOutfitForPopups(outfitIdsArray[2], popupName);
                 break;
             default:
-                Logger.Log(LogLevel.Error, "Error on selecting Outfit row when 'Edit' button is pressed");
+                Logger.Log(LogLevel.Error, Constants.OUTFIT_SELECTION_ON_EDIT_ERROR);
                 break;
         }
     }
@@ -434,24 +612,24 @@ public class ScreenTransition : MonoBehaviour
     public void DeleteOutfit_SeeMenuButton(int row)
     {
         sureToDeleteOutfitPopup.SetActive(true);
-        string popupName = "sureToDeleteOutfitPopup";
+        string popupName = Constants.SURE_TO_DELETE_OUTFIT_POPUP;
 
         switch (row)
         {
             case 1:
-                Logger.Log(LogLevel.DeepTest, "Outfit " + outfitIdsArray[0] + " selected to edit");
+                Logger.Log(LogLevel.DeepTest, Constants.SELECTED_OUTFIT_TO_EDIT + outfitIdsArray[0]);
                 LoadOutfitForPopups(outfitIdsArray[0], popupName);
                 break;
             case 2:
-                Logger.Log(LogLevel.DeepTest, "Outfit " + outfitIdsArray[1] + " selected to edit");
+                Logger.Log(LogLevel.DeepTest, Constants.SELECTED_OUTFIT_TO_EDIT + outfitIdsArray[1]);
                 LoadOutfitForPopups(outfitIdsArray[1], popupName);
                 break;
             case 3:
-                Logger.Log(LogLevel.DeepTest, "Outfit " + outfitIdsArray[2] + " selected to edit");
+                Logger.Log(LogLevel.DeepTest, Constants.SELECTED_OUTFIT_TO_EDIT + outfitIdsArray[2]);
                 LoadOutfitForPopups(outfitIdsArray[2], popupName);
                 break;
             default:
-                Logger.Log(LogLevel.Error, "Error on selecting Outfit row when 'Delete' button is pressed");
+                Logger.Log(LogLevel.Error, Constants.OUTFIT_SELECTION_ON_DELETE_ERROR);
                 break;
         }
     }
@@ -491,7 +669,7 @@ public class ScreenTransition : MonoBehaviour
         }
         else
         {
-            Logger.Log(LogLevel.Warning, "Invalid direction parameter. Use 'Left' or 'Right'.");
+            Logger.Log(LogLevel.Warning, Constants.INVALID_DIRECTION_ERROR);
             return;
         }
 
@@ -501,7 +679,7 @@ public class ScreenTransition : MonoBehaviour
         // Make sure the page index is in a valid range
         currentPageIndex = Mathf.Clamp(currentPageIndex, 0, totalPages - 1);
 
-        Logger.Log(LogLevel.DeepTest, "Current page: " + currentPageIndex);
+        Logger.Log(LogLevel.DeepTest, Constants.CURRENT_PAGE_SEE_MENU + currentPageIndex);
 
         // Update images with those of the new page
         if (lastPage != currentPageIndex)
@@ -512,7 +690,7 @@ public class ScreenTransition : MonoBehaviour
     private void LoadOutfitsForCurrentPage()
     {
         // Convert the outfits queue to a list
-        List<Outfit> outfitsList = DatabaseManager.outfitsQueue.ToList();
+        List<Outfit> outfitsList = dataManager.outfitsQueue.ToList();
 
         // Get the outfits for the current page
         int startIndex = currentPageIndex * outfitsPerPage;
@@ -528,7 +706,7 @@ public class ScreenTransition : MonoBehaviour
         // Call SetDefaultImage for the remaining slots if there are no outfits on the current page
         if (remainingSlots > 0)
         {
-            Logger.Log(LogLevel.DeepTest, "Remaining Slots: " + remainingSlots);
+            Logger.Log(LogLevel.DeepTest, Constants.REMAINING_SLOTS_SEE_MENU + remainingSlots);
 
             int startIdx = 6 - remainingSlots * 3;
             SetDefaultImages(galleryLoader.targetSeeImages, startIdx, 9);
@@ -549,7 +727,7 @@ public class ScreenTransition : MonoBehaviour
         }
         else
         {
-            Logger.Log(LogLevel.DeepTest, "Remaining Slots: 0");
+            Logger.Log(LogLevel.DeepTest, Constants.REMAINING_SLOTS_SEE_MENU + 0);
 
             EnableEditDeleteButtons(editButton1, deleteButton1);
             EnableEditDeleteButtons(editButton2, deleteButton2);
@@ -577,12 +755,12 @@ public class ScreenTransition : MonoBehaviour
     private void LoadOutfitForPopups(int id, string popupName)
     {
         // Search outfit with the parameter id
-        Outfit outfit = DatabaseManager.outfitsQueue.FirstOrDefault(outfit => outfit.OutfitID == id);
+        Outfit outfit = dataManager.outfitsQueue.FirstOrDefault(outfit => outfit.OutfitID == id);
 
         if (outfit == null)
-            Logger.Log(LogLevel.Error, ("Outfit to edit with id=" + id + " was not found on database"));
+            Logger.Log(LogLevel.Error, (Constants.OUTFIT_NOT_FOUND_TO_EDIT_ERROR + id));
         else
-            Logger.Log(LogLevel.DeepTest, ("Outfit to edit with id=" + id + " was found on database"));
+            Logger.Log(LogLevel.DeepTest, (Constants.OUTFIT_FOUND_TO_EDIT + id));
 
 
         // Build a list of image paths for all garments of the selected outfit
@@ -597,31 +775,36 @@ public class ScreenTransition : MonoBehaviour
         imagePaths.Add(bottomImagePath);
         imagePaths.Add(shoesImagePath);
 
-        if (popupName.Equals("sureToDeleteOutfitPopup"))
+        if (popupName.Equals(Constants.SURE_TO_DELETE_OUTFIT_POPUP))
             StartCoroutine(LoadImagesForGarments(galleryLoader.targetDeleteImages, imagePaths));
-        else if (popupName.Equals("editOutfitMenuPopup"))
+        else if (popupName.Equals(Constants.EDIT_OUTFIT_MENU_POPUP))
             StartCoroutine(LoadImagesForGarments(galleryLoader.targetEditImages, imagePaths));
         else
-            Logger.Log(LogLevel.Error, "Popup name not valid");
+            Logger.Log(LogLevel.Error, Constants.INVALID_POPUP_NAME_ERROR);
 
     }
 
     private string GetImagePathForGarment(int garmentID)
     {
-        if (garmentID.Equals(DatabaseManager.NO_GARMENT_ID)){
-            return DatabaseManager.NO_IMAGE_PATH;
-        } else
+        if (garmentID.Equals(Constants.NO_GARMENT_ID))
         {
-            // Get the garment from garmentsDictionary using the ID
-            if (DatabaseManager.garmentsDictionary.TryGetValue(garmentID, out Garment garment))
+            return Constants.NO_IMAGE_PATH;
+        }
+        else
+        {
+            // Get the garment from garmentsList using LINQ
+            Garment garment = dataManager.garmentsList.FirstOrDefault(g => g.GarmentID == garmentID);
+
+            if (garment != null)
+            {
                 return garment.ImagePath;
+            }
             else
             {
-                Logger.Log(LogLevel.Error, "Garment with ID " + garmentID + " not found in garmentsDictionary.");
-                return ""; 
+                Logger.Log(LogLevel.Error, Constants.NOT_FOUND_GARMENT_ERROR);
+                return "";
             }
         }
-    
     }
 
     private IEnumerator LoadImagesForGarments(List<Image> targetImages, List<string> imagePaths)
@@ -640,7 +823,7 @@ public class ScreenTransition : MonoBehaviour
             }
             else
             {
-                Logger.Log(LogLevel.Error, "Invalid garment index: " + i);
+                Logger.Log(LogLevel.Error, Constants.INVALID_GARMENT_INDEX_ERROR + i);
             }
         }
     }
@@ -667,6 +850,7 @@ public class ScreenTransition : MonoBehaviour
         editButton.interactable = true;
         deleteButton.interactable = true;
     }
+    
     // ----------------------------------------------------------------------------------
     // ------------------------------- IN APP UTILITIES                                       
     public void deleteWrittenInfoOnCreateMenu()

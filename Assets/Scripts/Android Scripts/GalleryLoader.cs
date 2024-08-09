@@ -70,8 +70,46 @@ public class GalleryLoader : MonoBehaviour
     public string createBottomImagePath;
     public string createShoesImagePath;
 
-    void Start()
+    private static GalleryLoader _instance;
+
+    public static GalleryLoader Instance
     {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindObjectOfType<GalleryLoader>();
+                if (_instance == null)
+                {
+                    GameObject singleton = new GameObject();
+                    _instance = singleton.AddComponent<GalleryLoader>();
+                    singleton.name = typeof(GalleryLoader).ToString() + " (Singleton)";
+                }
+            }
+            return _instance;
+        }
+    }
+
+    private void Awake()
+    {
+        if (_instance == null)
+        {
+            _instance = this;
+            //DontDestroyOnLoad(gameObject);
+            SetTargetImages();
+        }
+        else
+        {
+            if (_instance != this)
+            {
+                Destroy(gameObject);
+            }
+        }
+    }
+
+    public void SetTargetImages()
+    {
+
         targetPickImages = new List<Image>
         {
             pickTopImage,
@@ -121,42 +159,70 @@ public class GalleryLoader : MonoBehaviour
         {
             editTopImage,
             editBottomImage,
-            editShoesImage,
- 
+            editShoesImage
         };
         targetEditTexts = new List<GameObject>
         {
             editTopText,
             editBottomText,
-            editShoesText,
+            editShoesText
         };
 
         targetDeleteImages = new List<Image>
         {
             deleteTopImage,
             deleteBottomImage,
-            deleteShoesImage,
-
+            deleteShoesImage
         };
         targetDeleteTexts = new List<GameObject>
         {
             deleteTopText,
             deleteBottomText,
-            deleteShoesText,
+            deleteShoesText
         };
+
+        // Añadir logs para verificar asignaciones
+        /*
+        Debug.Log("Target Pick Images: " + targetPickImages.Count);
+        targetPickImages.ForEach(img => Debug.Log(img != null ? img.name : "null"));
+
+        Debug.Log("Target Pick Texts: " + targetPickTexts.Count);
+        targetPickTexts.ForEach(txt => Debug.Log(txt != null ? txt.name : "null"));
+
+        Debug.Log("Target Create Images: " + targetCreateImages.Count);
+        targetCreateImages.ForEach(img => Debug.Log(img != null ? img.name : "null"));
+
+        Debug.Log("Target See Images: " + targetSeeImages.Count);
+        targetSeeImages.ForEach(img => Debug.Log(img != null ? img.name : "null"));
+
+        Debug.Log("Target See Texts: " + targetSeeTexts.Count);
+        targetSeeTexts.ForEach(txt => Debug.Log(txt != null ? txt.name : "null"));
+
+        Debug.Log("Target Edit Images: " + targetEditImages.Count);
+        targetEditImages.ForEach(img => Debug.Log(img != null ? img.name : "null"));
+
+        Debug.Log("Target Edit Texts: " + targetEditTexts.Count);
+        targetEditTexts.ForEach(txt => Debug.Log(txt != null ? txt.name : "null"));
+
+        Debug.Log("Target Delete Images: " + targetDeleteImages.Count);
+        targetDeleteImages.ForEach(img => Debug.Log(img != null ? img.name : "null"));
+
+        Debug.Log("Target Delete Texts: " + targetDeleteTexts.Count);
+        targetDeleteTexts.ForEach(txt => Debug.Log(txt != null ? txt.name : "null"));
+        */
     }
 
     public void ProcessLocalData(List<string[]> localNames, List<string[]> localImagePaths)
     {
         if (localNames == null || localImagePaths == null || localNames.Count == 0 || localImagePaths.Count == 0)
         {
-            Logger.Log(LogLevel.Error, "Invalid or empty localNames or localImagePaths lists.");
+            Logger.Log(LogLevel.Error, Constants.INVALID_LOCAL_NAMES_OR_IMAGE_PATHS_ERROR);
             return;
         }
 
         if (localNames.Count != localImagePaths.Count)
         {
-            Logger.Log(LogLevel.Error, "Mismatched lengths of localNames and localImagePaths lists.");
+            Logger.Log(LogLevel.Error, Constants.MISMATCHED_LENGS_LOCAL_LISTS_ERROR);
             return;
         }
 
@@ -180,7 +246,7 @@ public class GalleryLoader : MonoBehaviour
             }
             else
             {
-                Logger.Log(LogLevel.Error, "Invalid garment index: " + i);
+                Logger.Log(LogLevel.Error, Constants.INVALID_GARMENT_INDEX_ERROR + i);
             }
         }
     }
@@ -190,7 +256,7 @@ public class GalleryLoader : MonoBehaviour
 
         if (localImagePaths == null || localImagePaths.Length == 0)
         {
-            Logger.Log(LogLevel.Error, "Invalid or empty localImagePaths array.");
+            Logger.Log(LogLevel.Error, Constants.INVALID_LOCAL_IMAGE_PATH_ARRAY_ERROR);
             return;
         }
 
@@ -207,18 +273,38 @@ public class GalleryLoader : MonoBehaviour
                 {
                     // Load its image on GameObject Image
                     StartCoroutine(LoadImageFromPath(targetImage, localImagePath));
+
+                    // Asignar el texto al GameObject de texto hijo
+                    GameObject textObject = targetImage.transform.GetChild(0).gameObject; // Suponiendo que el texto es el primer hijo
+                    if (textObject != null)
+                    {
+                        TextMeshProUGUI textComponent = textObject.GetComponent<TextMeshProUGUI>();
+                        if (textComponent != null && i < localNames.Length)
+                        {
+                            textComponent.text = localNames[i];
+                        }
+                        else
+                        {
+                            Logger.Log(LogLevel.Warning, Constants.INVALID_TEXT_COMPONENT_ERROR);
+                        }
+                    }
+                    else
+                    {
+                        Logger.Log(LogLevel.Warning, Constants.MISSING_TEXT_GAMEOBJECT_ERROR);
+                    }
                 }
                 else
                 {
-                    Logger.Log(LogLevel.Error, "Garment image not found: " + localImagePath); // TODO: Warning or Error?
+                    Logger.Log(LogLevel.Error, Constants.NOT_FOUND_GARMENT_IMAGE_ERROR + localImagePath); // TODO: Warning or Error?
                 }
             }
             else
             {
-                Logger.Log(LogLevel.Error, "Invalid garment index: " + i);
+                Logger.Log(LogLevel.Error, Constants.INVALID_GARMENT_INDEX_ERROR + i);
             }
         }
- 
+
+
     }
 
     private Image GetImageByIndex(int index, List<Image> targetImages)
@@ -232,14 +318,16 @@ public class GalleryLoader : MonoBehaviour
 
     public IEnumerator LoadImageFromPath(Image targetImage, string localImagePath)
     {
+        Logger.Log(LogLevel.DeepTest, targetImage.name);
+
         // Check if imagePath is not null
         if (string.IsNullOrEmpty(localImagePath))
         {
-            Logger.Log(LogLevel.Error, "localImagePath is null or empty.");
+            Logger.Log(LogLevel.Error, Constants.EMPTY_LOCALIMAGEPATH_ERROR);
             yield break;
         }
         // Check if imagePath exists
-        else if (localImagePath.Equals(DatabaseManager.NO_IMAGE_PATH))
+        else if (localImagePath.Equals(Constants.NO_IMAGE_PATH))
         {
             // Asegúrate de que SetDefaultImageAndText coincida con los tipos de datos esperados
             SetDefaultImageAndText(targetImages: new List<Image> { targetImage }, targetTexts: new List<GameObject> { /* Pasa aquí el GameObject que necesitas */ });
@@ -255,7 +343,7 @@ public class GalleryLoader : MonoBehaviour
                 // Check for errors
                 if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError)
                 {
-                    Logger.Log(LogLevel.Error, "Error loading texture: " + www.error);
+                    Logger.Log(LogLevel.Error, Constants.LOAD_IMAGE_ERROR + www.error);
                 }
                 else
                 {
@@ -264,7 +352,16 @@ public class GalleryLoader : MonoBehaviour
 
                     // Create a sprite and assign it to the target image
                     Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
+
                     targetImage.sprite = sprite;
+
+                    if (targetImage == createTopImage)
+                        createTopImagePath = localImagePath;
+                    else if (targetImage == createBottomImage)
+                        createBottomImagePath = localImagePath;
+                    else if (targetImage == createShoesImage)
+                        createShoesImagePath = localImagePath;
+
                 }
             }
         }
@@ -272,7 +369,7 @@ public class GalleryLoader : MonoBehaviour
       
     }
 
-    public void LoadImageFromExplorer(string type)
+    public string LoadImageFromExplorer(string type)
     {
         // Abrir el panel de selección de archivo
         string imagePath = EditorUtility.OpenFilePanel("Select Image", "", "png,jpg,jpeg");
@@ -280,6 +377,8 @@ public class GalleryLoader : MonoBehaviour
         // Comprobar si se seleccionó un archivo
         if (!string.IsNullOrEmpty(imagePath))
         {
+            //Logger.Log(LogLevel.DeepTest, "imagePath: " + imagePath);
+
             if (type.Equals("Top"))
                 StartCoroutine(LoadImageFromPath(createTopImage, imagePath));
             else if (type.Equals("Bottom"))
@@ -287,43 +386,85 @@ public class GalleryLoader : MonoBehaviour
             else if (type.Equals("Shoes"))
                 StartCoroutine(LoadImageFromPath(createShoesImage, imagePath));
             else
-                Logger.Log(LogLevel.Error, "Type parameter not valid on LoadImageFromExplorer()");
+                Logger.Log(LogLevel.Error, Constants.INVALID_TYPE_PARAMETER_ERROR);
+
+            return imagePath;
         }
+
+        return Constants.UNDEFINED;
     }
 
     public void SetDefaultImageAndText(Image targetImage = null, List<Image> targetImages = null, GameObject targetText = null, List<GameObject> targetTexts = null)
     {
-        // Verifica si se proporcionó una lista o un solo objeto para las imágenes
-        if (targetImages != null)
+        // Lista para acumular los nombres de las prendas que se han seteado
+        List<string> debugSettedGarments = new List<string>();
+
+        // Set default image for one or more targetImage/s
+        if (targetImages != null && targetImages.Count > 0)
         {
-            targetImages.ForEach(img => SetDefaultImage(img));
+            targetImages.ForEach(img =>
+            {
+                if (img != null)
+                {
+                    SetDefaultImage(img);
+                    debugSettedGarments.Add(img.name);
+                }
+                else
+                {
+                    Logger.Log(LogLevel.Error, "One of the target images is null");
+                }
+            });
         }
         else if (targetImage != null)
         {
             SetDefaultImage(targetImage);
+            debugSettedGarments.Add(targetImage.name);
+        }
+        else
+        {
+            Logger.Log(LogLevel.Error, "No target images provided");
         }
 
-        // Verifica si se proporcionó una lista o un solo objeto para los textos
-        if (targetTexts != null)
+        // Set default text for one or more targetText/s
+        if (targetTexts != null && targetTexts.Count > 0)
         {
-            targetTexts.ForEach(txt => SetDefaultText(txt));
+            targetTexts.ForEach(txt =>
+            {
+                if (txt != null)
+                {
+                    SetDefaultText(txt);
+                    debugSettedGarments.Add(txt.name);
+                }
+                else
+                {
+                    Logger.Log(LogLevel.Error, "One of the target texts is null");
+                }
+            });
         }
         else if (targetText != null)
         {
             SetDefaultText(targetText);
+            debugSettedGarments.Add(targetText.name);
+        }
+        // No else case needed for missing texts.
+
+        // Imprimir los elementos seteados en una sola línea
+        if (debugSettedGarments.Count > 0)
+        {
+            Logger.Log(LogLevel.Test, ($"Setting default image for: {string.Join(", ", debugSettedGarments)}"));
         }
     }
 
     public void SetDefaultImage(Image targetImage)
     {
-        if (targetImage != null)
+        if (targetImage == null)
         {
-            targetImage.sprite = defaultSprite;
+            Logger.Log(LogLevel.Error, Constants.NULL_TARGET_IMAGE_ERROR);
+            return; // Salir del método si targetImage es null
         }
-        else
-        {
-            Logger.Log(LogLevel.Error, "Target image is null on SetDefaultImageAndText()");
-        }
+
+        // Asignar el sprite predeterminado a targetImage
+        targetImage.sprite = defaultSprite;
     }
 
     private void SetDefaultText(GameObject targetTextObject)
@@ -338,16 +479,16 @@ public class GalleryLoader : MonoBehaviour
             if (targetTextComponent != null)
             {
                 // Asigna el texto predeterminado al componente de texto
-                targetTextComponent.text = "Default text";
+                targetTextComponent.text = Constants.DEFAULT_TEXT;
             }
             else
             {
-                Logger.Log(LogLevel.Error, "Text component not found in object: " + targetTextObject.name);
+                Logger.Log(LogLevel.Error, Constants.NOT_FOUND_TEXT_COMPONENT_ERROR + targetTextObject.name);
             }
         }
         else
         {
-            Logger.Log(LogLevel.Error, "Target text GameObject is null at SetDefaultImageAndText()");
+            Logger.Log(LogLevel.Error, Constants.NULL_TARGET_TEXT_ERROR);
         }
     }
 }

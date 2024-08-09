@@ -10,18 +10,28 @@ public class DatabaseManager : MonoBehaviour
     private static string databasePath;
     private static SQLiteConnection connection;
 
-    public static Queue<Outfit> outfitsQueue = new Queue<Outfit>();
-    public static Dictionary<int, Garment> garmentsDictionary = new Dictionary<int, Garment>();
+    private static DataManager dataManager;
 
-    private const string GARMENT_TABLE_NAME = "Garment";
-    private const string OUTFIT_TABLE_NAME = "Outfit";
-    private const string ALL = "All";
-    public const int NO_GARMENT_ID = -1;
-    public const string UNDEFINED = "undefined";
-    public const string NO_IMAGE_PATH = "undefined";
+    //public static Queue<Outfit> outfitsQueue = new Queue<Outfit>();   // TODO: delete
+    //public static List<Garment> garmentsList = new List<Garment>();   // TODO: delete
+
+    public static bool[] areGarmentsGoingToBeSaved = new bool[3];
 
     void Awake()
     {
+    
+
+    }
+
+    void Start()
+    {
+        dataManager = CoreManager.Instance.GetDataManager();
+
+        if (dataManager == null)
+        {
+            Debug.LogError("Could not get DataManager from CoreManager.Instance");
+        }
+
         InitializeDatabase("myDatabase.db");
         // InitializeDatabase("dressnapDatabase.db"); // TODO: only uncomment in the end to use real Database
 
@@ -39,7 +49,7 @@ public class DatabaseManager : MonoBehaviour
 
         if (connection != null)
         {
-            Logger.Log(LogLevel.Success, $"Connection to database opened successfully in: {path}");
+            Logger.Log(LogLevel.DBConnection, $"Connection to database opened successfully in: {path}");
         }
         else
         {
@@ -47,11 +57,9 @@ public class DatabaseManager : MonoBehaviour
         }
     }
 
-    void Start()
+    public void SetDataManager(DataManager dm)
     {
-        // Load all outftis from database when the app is starting
-        DatabaseManager.LoadOutfitsOnLocalDS();
-        DatabaseManager.LoadGarmentsOnLocalDS();
+        dataManager = dm;
     }
 
     private void StartTestingData()
@@ -59,19 +67,14 @@ public class DatabaseManager : MonoBehaviour
         Task.Run(async () =>
         {
             await OpenConnectionAsync();
-            await ClearTablesAsync(ALL);
+            await ClearTablesAsync(Constants.ALL);
             await CheckTablesExistOrCreate();
 
             await InsertFirstDataAsync();
 
-            //await PrintAllGarmentsAsync();
-            //await PrintAllOutfitsAsync();
-
+            // Load all outftis from database when the app is starting
             await LoadOutfitsOnLocalDS();
             await LoadGarmentsOnLocalDS();
-
-            //await PrintOutfitQueue();
-            //await PrintGarmentDictionary();
         });
     }
 
@@ -88,7 +91,7 @@ public class DatabaseManager : MonoBehaviour
         {
             if (connection != null)
             {
-                Logger.Log(LogLevel.Success, $"Connection to database opened successfully in: {databasePath}");
+                Logger.Log(LogLevel.DBConnection, $"Connection to database opened successfully in: {databasePath}");
             }
             else
             {
@@ -101,24 +104,24 @@ public class DatabaseManager : MonoBehaviour
     {
         await Task.Run(() =>
         {
-            if (!TableExists(GARMENT_TABLE_NAME))
+            if (!TableExists(Constants.GARMENT_TABLE_NAME))
             {
                 connection.CreateTable<Garment>();
-                Logger.Log(LogLevel.Success, $"Garment table created on: {databasePath}");
+                Logger.Log(LogLevel.DeepTest, $"Garment table created on: {databasePath}");
             }
             else
             {
-                Logger.Log(LogLevel.Success, $"Garment table already exists on: {databasePath}");
+                Logger.Log(LogLevel.DeepTest, $"Garment table already exists on: {databasePath}");
             }
 
-            if (!TableExists(OUTFIT_TABLE_NAME))
+            if (!TableExists(Constants.OUTFIT_TABLE_NAME))
             {
                 connection.CreateTable<Outfit>();
-                Logger.Log(LogLevel.Success, $"Outfit table created on: {databasePath}");
+                Logger.Log(LogLevel.DeepTest, $"Outfit table created on: {databasePath}");
             }
             else
             {
-                Logger.Log(LogLevel.Success, $"Outfit table already exists on: {databasePath}");
+                Logger.Log(LogLevel.DeepTest, $"Outfit table already exists on: {databasePath}");
             }
         });
     }
@@ -172,7 +175,7 @@ public class DatabaseManager : MonoBehaviour
 
                 connection.Insert(new Outfit { TopID = 6, BottomID = 8, ShoesID = 17 });
                 connection.Insert(new Outfit { TopID = 7, BottomID = 12, ShoesID = 16 });
-                connection.Insert(new Outfit { TopID = 7, BottomID = 12, ShoesID = 15 });
+                //connection.Insert(new Outfit { TopID = 7, BottomID = 12, ShoesID = 15 });
             }
             catch (SQLiteException e)
             {
@@ -189,17 +192,17 @@ public class DatabaseManager : MonoBehaviour
             {
                 Logger.Log(LogLevel.Success, "Data deleted successfully.");
 
-                if (tableName.Equals(GARMENT_TABLE_NAME))
+                if (tableName.Equals(Constants.GARMENT_TABLE_NAME))
                 {
                     connection.DeleteAll<Garment>();
                     Logger.Log(LogLevel.Success, "Garment table data deleted successfully.");
                 }
-                else if (tableName.Equals(OUTFIT_TABLE_NAME))
+                else if (tableName.Equals(Constants.OUTFIT_TABLE_NAME))
                 {
                     connection.DeleteAll<Outfit>();
                     Logger.Log(LogLevel.Success, "Outfit table data deleted successfully.");
                 }
-                else if (tableName.Equals("All"))
+                else if (tableName.Equals(Constants.ALL))
                 {
                     connection.DeleteAll<Outfit>();
                     connection.DeleteAll<Garment>();
@@ -223,35 +226,35 @@ public class DatabaseManager : MonoBehaviour
         {
             try
             {
-                if (tableName.Equals(GARMENT_TABLE_NAME))
+                if (tableName.Equals(Constants.GARMENT_TABLE_NAME))
                 {
-                    if (TableExists(GARMENT_TABLE_NAME))
+                    if (TableExists(Constants.GARMENT_TABLE_NAME))
                     {
                         connection.DropTable<Garment>();
-                        Logger.Log(LogLevel.Success, "Garment table dropped successfully.");
+                        Logger.Log(LogLevel.DeepTest, "Garment table dropped successfully.");
                     }
                     else
                     {
                         Logger.Log(LogLevel.Warning, "Garment table was not dropped because it doesn't exist.");
                     }
                 }
-                else if (tableName.Equals(OUTFIT_TABLE_NAME))
+                else if (tableName.Equals(Constants.OUTFIT_TABLE_NAME))
                 {
-                    if (TableExists(OUTFIT_TABLE_NAME))
+                    if (TableExists(Constants.OUTFIT_TABLE_NAME))
                     {
                         connection.DropTable<Outfit>();
-                        Logger.Log(LogLevel.Success, "Outfit table dropped successfully.");
+                        Logger.Log(LogLevel.DeepTest, "Outfit table dropped successfully.");
                     }
                     else
                     {
                         Logger.Log(LogLevel.Warning, "Outfit table was not dropped because it doesn't exist.");
                     }
                 }
-                else if (tableName.Equals("All"))
+                else if (tableName.Equals(Constants.ALL))
                 {
                     // Recursive calls
-                    ClearTablesAsync(GARMENT_TABLE_NAME).Wait();
-                    ClearTablesAsync(OUTFIT_TABLE_NAME).Wait();
+                    ClearTablesAsync(Constants.GARMENT_TABLE_NAME).Wait();
+                    ClearTablesAsync(Constants.OUTFIT_TABLE_NAME).Wait();
                     //Logger.Log(LogLevel.Success, "All tables dropped successfully.");
                 }
                 else
@@ -331,7 +334,8 @@ public class DatabaseManager : MonoBehaviour
             {
                 connection.Insert(newOutfit);
                 insertedID = newOutfit.OutfitID;
-                Logger.Log(LogLevel.Success, "Outfit with id=" + insertedID + " successfully inserted into Garment.");
+                Logger.Log(LogLevel.Success, "Outfit with id=" + insertedID + " and content [" + newOutfit.TopID + ", "
+                    + newOutfit.BottomID + ", " + newOutfit.ShoesID + "] " + "inserted into Garment.");
             }
             catch (SQLiteException e)
             {
@@ -450,77 +454,104 @@ public class DatabaseManager : MonoBehaviour
         });
     }
 
+    public static int GetGarmentIDByImagePath(string imagePath)
+    {
+        // Itera sobre los elementos de la lista
+        foreach (var garment in dataManager.garmentsList)
+        {
+            // Compara el atributo ImagePath del Garment con el proporcionado
+            if (garment.ImagePath == imagePath)
+            {
+                // Si coincide, devuelve el ID del Garment
+                return garment.GarmentID;
+            }
+        }
+
+        // Si no se encuentra un Garment que coincida, devuelve un valor indicativo de no encontrarlo
+        return -1;
+    }
+
+    public static Garment getGarmentByID(int id)
+    {
+        // Itera sobre los elementos de la lista
+        foreach (Garment garment in dataManager.garmentsList)
+        {
+            // Compara el atributo ImagePath del Garment con el proporcionado
+            if (garment.GarmentID == id)
+            {
+                // Si coincide, devuelve el ID del Garment
+                return garment;
+            }
+        }
+
+        return null;
+    }
 
     /*---------------------------------- UI METHODS -------------------------------------*/
     public static async Task UpdateLocalDataStructures()
     {
-        await Task.Run(() =>
+        try
         {
-            try
+            await Task.Run(async () =>
             {
-                LoadOutfitsOnLocalDS();
-                LoadGarmentsOnLocalDS();
+                await LoadOutfitsOnLocalDS();
 
-                Logger.Log(LogLevel.Info, "Local data updated succesfully");
-            }
-            catch (SQLiteException e)
-            {
-                Logger.Log(LogLevel.Error, $"Error updating local data structures: {e.Message}");
-            }
-        });
+                await LoadGarmentsOnLocalDS();
+            });
+
+            Logger.Log(LogLevel.DeepTest, "Local data updated successfully");
+        }
+        catch (SQLiteException e)
+        {
+            Logger.Log(LogLevel.Error, $"Error updating local data structures: {e.Message}");
+        }
     }
 
     public static async Task LoadOutfitsOnLocalDS()
     {
-        await Task.Run(async () =>
+        try
         {
-            try
-            {
-                var outfits = await GetAllOutfitsAsync();
-                foreach (var outfit in outfits)
-                {
-                    outfitsQueue.Enqueue(outfit);
-                }
+            var outfits = await GetAllOutfitsAsync();
 
-                Logger.Log(LogLevel.Info, "Local outfits updated succesfully on queue");
-            }
-            catch (SQLiteException e)
+            foreach (var outfit in outfits.Reverse())
             {
-                Logger.Log(LogLevel.Error, $"Error updating local outfits queue: {e.Message}");
+                dataManager.outfitsQueue.Enqueue(outfit);
             }
-        });
+
+            Logger.Log(LogLevel.DeepTest, "Local outfits updated successfully on queue");
+        }
+        catch (SQLiteException e)
+        {
+            Logger.Log(LogLevel.Error, $"Error updating local outfits queue: {e.Message}");
+        }
     }
 
-    public static async Task LoadGarmentsOnLocalDS ()
+    public static async Task LoadGarmentsOnLocalDS()
     {
-        await Task.Run(async () =>
+        try
         {
-            try
+            var garments = await GetAllGarmentsAsync();
+            foreach (var garment in garments)
             {
-                var garments = await GetAllGarmentsAsync();
-                foreach (var garment in garments)
-                {
-                    garmentsDictionary.Add(garment.GarmentID, garment);
-                }
+                dataManager.garmentsList.Add(garment);
+            }
 
-                Logger.Log(LogLevel.Info, "Local garments updated succesfully on dictionary");
-            }
-            catch (SQLiteException e)
-            {
-                Logger.Log(LogLevel.Error, $"Error updating local garments dictionary: {e.Message}");
-            }
-            
-        });
+            Logger.Log(LogLevel.DeepTest, "Local garments updated successfully on list");
+        }
+        catch (SQLiteException e)
+        {
+            Logger.Log(LogLevel.Error, $"Error updating local garments list: {e.Message}");
+        }
     }
 
     public static Outfit PickRandomLocalOutfit()
     {
         try
         {
-            if (outfitsQueue.Count > 0)
+            if (dataManager.outfitsQueue.Count > 0)
             {
-                int randomIndex = UnityEngine.Random.Range(0, outfitsQueue.Count);
-                return outfitsQueue.ElementAt(randomIndex);
+                int randomIndex = UnityEngine.Random.Range(0, dataManager.outfitsQueue.Count);
+                return dataManager.outfitsQueue.ElementAt(randomIndex);
             }
             else
             {
@@ -535,182 +566,160 @@ public class DatabaseManager : MonoBehaviour
         }
     }
 
-    /*---------------------------------- DEBUG METHODS ----------------------------------*/
-    public static async Task PrintAllOutfitsOnDB()
-    {
-        try
-        {
-            Queue<Outfit> outfits = await GetAllOutfitsAsync();
-
-            foreach (var outfit in outfits)
-            {
-                Logger.Log(LogLevel.Success, $"Outfit ID: {outfit.OutfitID}, TopID: {outfit.TopID}, BottomID: {outfit.BottomID}, ShoesID: {outfit.ShoesID}");
-            }
-        }
-        catch (SQLiteException ex)
-        {
-            Logger.Log(LogLevel.Error, $"Error printing outfits: {ex.Message}");
-        }
-    }
-
-    public static async Task PrintAllGarmentsOnDB()
-    {
-        try
-        {
-            var garments = await GetAllGarmentsAsync();
-
-            foreach (var garment in garments)
-            {
-                Logger.Log(LogLevel.Success, $"Garment ID: {garment.GarmentID}, Name: {garment.Name}, Type: {garment.Type}, ImagePath: {garment.ImagePath}");
-            }
-        }
-        catch (SQLiteException ex)
-        {
-            Logger.Log(LogLevel.Error, $"Error printing garments: {ex.Message}");
-        }
-    }
-
-    public static Task PrintAllOutfitsOnLocal()
-    {
-        try
-        {
-            foreach (var outfit in outfitsQueue)
-            {
-                Logger.Log(LogLevel.Success, $"Outfit ID: {outfit.OutfitID}, TopID: {outfit.TopID}, BottomID: {outfit.BottomID}, ShoesID: {outfit.ShoesID}");
-            }
-        }
-        catch (SQLiteException ex)
-        {
-            Logger.Log(LogLevel.Error, $"Error printing outfits: {ex.Message}");
-        }
-
-        return Task.CompletedTask;
-    }
-
-    public static Task PrintAllGarmentsOnLocal()
-    {
-        try
-        {
-            foreach (var garment in garmentsDictionary)
-            {
-                Logger.Log(LogLevel.Success, $"Garment ID: {garment.Key}, Name: {garment.Value.GarmentID}, Type: {garment.Value.Type}, ImagePath: {garment.Value.ImagePath}");
-            }
-        }
-        catch (SQLiteException ex)
-        {
-            Logger.Log(LogLevel.Error, $"Error printing garments: {ex.Message}");
-        }
-
-        return Task.CompletedTask;
-    }
-
     /*---------------------------------- VALIDATION METHODS -----------------------------*/
-    public static async Task<bool> ValidateOutfitInfoAsync(List<Garment> garmentList)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="garments"></param>
+    /// <returns>string= "absentGarment", "sameGarment", "", </returns>
+    public static async Task<string> ValidateOutfitInfoAsync(List<Garment> garments)
     {
-        if (garmentList == null || garmentList.Count == 0) 
+        // 1º Check if there are exactly 3 Garment
+        if (garments.Count == 3)
         {
-            Logger.Log(LogLevel.Error, "An outfit must have at least one garment.");
-            return false;
-        }
-
-        // Validate each garment in the list
-        foreach (var garment in garmentList)
-        {
-            if (!await ValidateGarmentInfoAsync(garment))
+            // 2º Check if imagePath and name from parameters are different among themselves
+            if (AreImagePathsDifferent(garments) && AreNameDifferent(garments))
             {
-                Logger.Log(LogLevel.Error, "Invalid garment in the outfit.");
-                return false;
+                // 3º Check if imagePath currently exist on database
+                foreach (var garment in garments)
+                {
+                    bool imagePathExists = await Task.Run(() => isImagePathUnique(garment.ImagePath));
+
+                    // Compare parameter garments with local garmentsList 
+                    if (!imagePathExists)
+                    {
+                        string validationGarmentReturn = ValidateGarmentInfo(garment);
+                        if (validationGarmentReturn.Equals(Constants.TRUE)) {
+                            if (garment.Type.Equals(Constants.TOP_FIELD))
+                                areGarmentsGoingToBeSaved[0] = true;
+                            else if (garment.Type.Equals(Constants.BOTTOM_FIELD))
+                                areGarmentsGoingToBeSaved[1] = true;
+                            else if (garment.Type.Equals(Constants.SHOES_FIELD))
+                                areGarmentsGoingToBeSaved[2] = true;
+                        } 
+                        else if (validationGarmentReturn.Equals(Constants.EXISTING_GARMENT_NAME_ERROR))
+                            return Constants.EXISTING_GARMENT_NAME_ERROR;
+                        else if (validationGarmentReturn.Equals(Constants.EMPTY_GARMENT_NAME_ERROR))
+                            return Constants.EMPTY_GARMENT_NAME_ERROR;
+                        else if (validationGarmentReturn.Equals(Constants.NO_GARMENT_TYPE_ERROR))
+                            return Constants.NO_GARMENT_TYPE_ERROR;
+                    }
+                    else
+                    {
+                        if (garment.Type.Equals(Constants.TOP_FIELD))
+                            areGarmentsGoingToBeSaved[0] = false;
+                        else if (garment.Type.Equals(Constants.BOTTOM_FIELD))
+                            areGarmentsGoingToBeSaved[1] = false;
+                        else if (garment.Type.Equals(Constants.SHOES_FIELD))
+                            areGarmentsGoingToBeSaved[2] = false;
+
+
+                        // TODO: Mostrar mensaje de advertencia
+                        Logger.Log(LogLevel.Warning, $"Garment '{garment.Name}' already exists in garmentsList and it is not gonna be saved.");
+                    }
+                }
+            } else {
+                // TODO: show popup saying "Garments must be different"
+                Logger.Log(LogLevel.Error, Constants.SAME_GARMENT_IMAGE_ERROR);
+                return Constants.SAME_IMAGE; // SAME_NAME_ERROR
             }
+        } else {
+            // TODO: show popup saying "An outfit must contain 3 garments"
+            Logger.Log(LogLevel.Error, Constants.MISSING_GARMENTS_ERROR);
+            return Constants.MISSING_GARMENTS;
         }
-
-        // Check for duplicate ImagePath and Name within the list
-        if (HasDuplicateValues(garmentList.Select(g => g.ImagePath)))
-        {
-            Logger.Log(LogLevel.Error, "Outfit contains garments with duplicate ImagePath.");
-            return false;
-        }
-
-        if (HasDuplicateValues(garmentList.Select(g => g.Name)))
-        {
-            Logger.Log(LogLevel.Error, "Outfit contains garments with duplicate Name.");
-            return false;
-        }
-
-        return true;
+      
+        return Constants.VALID_OUTFIT;
     }
 
-    private static async Task<bool> ValidateGarmentInfoAsync(Garment garment)
+    // Método que valida la información de una prenda con respecto a las existentes en BD
+    private static string ValidateGarmentInfo(Garment garment)
     {
-        // Check if Garment.Name is NOT NULL or empty
+        // Verificar si Garment.Name NO es NULL ni está vacío
         if (string.IsNullOrEmpty(garment.Name))
         {
             Logger.Log(LogLevel.Error, "Garment name cannot be null or empty.");
-            return false;
+            return Constants.EMPTY_GARMENT_NAME_ERROR;
         }
 
-        // Check if Garment.Name is UNIQUE
-        if (!await NameIsUniqueAsync(garment.Name, garment.GarmentID))
+        // Verificar si Garment.Name es ÚNICO
+        if (!isNameUnique(garment.Name))
         {
-            Logger.Log(LogLevel.Error, "Garment name must be unique.");
-            return false;
+            Logger.Log(LogLevel.Error, $"The garment name '{garment.Name}' is already in use.");
+            return Constants.EXISTING_GARMENT_NAME_ERROR;
         }
 
-        // Check if Garment.Type is NOT NULL
-        if (string.IsNullOrEmpty(garment.Type) || !ValidGarmentType(garment.Type))
+        // Verificar si Garment.Type NO es NULL
+        if (string.IsNullOrEmpty(garment.Type) || !isTypeValid(garment.Type))
         {
             Logger.Log(LogLevel.Error, $"Invalid garment type. Type must be 'Top', 'Bottom', or 'Shoes'. id= {garment.GarmentID}");
-            return false;
+            return Constants.NO_GARMENT_TYPE_ERROR;
         }
 
-        // Check if Garment.ImagePath is UNIQUE
-        bool isImagePathUnique = await IsImagePathUniqueAsync(garment.ImagePath, garment.GarmentID);
-        if (!isImagePathUnique)
-        {
-            Logger.Log(LogLevel.Error, " Image path is not unique. " + "id= " + garment.GarmentID);
-            return false;
-        }
-
-        return true;
+        return Constants.TRUE;
     }
 
-    // Check if there are duplicate values in a sequence (of anything)
-    private static bool HasDuplicateValues<T>(IEnumerable<T> values)
+    // Método que verifica si un nombre de imagen ya existe en la base de datos de prendas
+    private static bool isImagePathUnique(string imagePath)
     {
-        var uniqueValues = new HashSet<T>();
-        foreach (var value in values)
+        try
         {
-            if (!uniqueValues.Add(value))
+            // Verificar si alguna prenda tiene la misma ruta de imagen
+            bool alreadyExists = dataManager.garmentsList.Any(g =>
             {
-                // Value already exists, indicating a duplicate
-                return true;
-            }
+                // Comparar el imagePath sin importar mayúsculas y minúsculas
+                return string.Equals(g.ImagePath, imagePath, StringComparison.OrdinalIgnoreCase);
+            });
+
+            return alreadyExists;
         }
-        return false;
+        catch (Exception ex)
+        {
+            Logger.Log(LogLevel.Error, $"Error checking existence of image path: {ex.Message}");
+            return false;
+        }
     }
 
-    private static bool ValidGarmentType(string type)
+    public static int getGarmentID(string imagePath)
+    {
+        try
+        {
+            // Buscar la prenda con la misma ruta de imagen
+            var existingGarment = dataManager.garmentsList.FirstOrDefault(g =>
+                // Comparar el imagePath sin importar mayúsculas y minúsculas
+                string.Equals(g.ImagePath, imagePath, StringComparison.OrdinalIgnoreCase));
+
+            // Si la prenda existe, devolver su ID; de lo contrario, devolver -1
+            return existingGarment != null ? existingGarment.GarmentID : -1;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log(LogLevel.Error, $"Error checking existence of image path: {ex.Message}");
+            return 0;
+        }
+    }
+
+    private static bool isTypeValid(string type)
     {
         // Valid garment types
         string[] validTypes = { "Top", "Bottom", "Shoes" };
         return validTypes.Contains(type);
     }
 
-    public static bool GarmentIsEmpty(Garment garment)
+    public static bool isGarmentEmpty(Garment garment)
     {
         // Si el nombre y la imagen están ambos vacíos, consideramos que el Garment está vacío.
         return string.IsNullOrEmpty(garment.Name) && string.IsNullOrEmpty(garment.ImagePath);
     }
 
-    private static async Task<bool> NameIsUniqueAsync(string name, int currentGarmentID = -1)
+    private static bool isNameUnique(string name)
     {
         try
         {
-            var allGarments = await GetAllGarmentsAsync();
+            var allGarments = dataManager.garmentsList;
 
-            // Check if any garment has the same name
-            bool isNotUnique = allGarments.Any(g => g.Name == name && g.GarmentID != currentGarmentID);
+            bool isNotUnique = allGarments.Any(g => string.Equals(g.Name, name, StringComparison.OrdinalIgnoreCase));
 
-            // If not unique, return false; otherwise, return true
             return !isNotUnique;
         }
         catch (Exception ex)
@@ -720,30 +729,129 @@ public class DatabaseManager : MonoBehaviour
         }
     }
 
-    private static async Task<bool> IsImagePathUniqueAsync(string imagePath, int currentGarmentID = -1)
+    private static bool AreNameDifferent(List<Garment> garments)
     {
-        try
-        {
-            var allGarments = await GetAllGarmentsAsync();
+        HashSet<string> uniqueNames = new HashSet<string>();
 
-            // Check if any garment has the same image path
-            bool isNotUnique = allGarments.Any(g => g.ImagePath == imagePath && g.GarmentID != currentGarmentID);
-
-            // If not unique, return false; otherwise, return true
-            return !isNotUnique;
-        }
-        catch (Exception ex)
+        foreach (var garment in garments)
         {
-            Logger.Log(LogLevel.Error, $"Error checking uniqueness of image path: {ex.Message}");
-            return false;
+            // Verificar si la ruta de imagen ya está en el conjunto
+            if (!uniqueNames.Add(garment.Name))
+            {
+                Logger.Log(LogLevel.Error, $"Duplicate Name found: {garment.Name}");
+                return false;
+            }
         }
+
+        return true;
     }
+
+    private static bool AreImagePathsDifferent(List<Garment> garments)
+    {
+        HashSet<string> uniqueImagePaths = new HashSet<string>();
+
+        foreach (var garment in garments)
+        {
+            // Verificar si la ruta de imagen ya está en el conjunto
+            if (!uniqueImagePaths.Add(garment.ImagePath))
+            {
+                Logger.Log(LogLevel.Error, $"Duplicate ImagePath found: {garment.ImagePath}");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static string IsOutfitDuplicate(List<Garment> garments)
+    {
+        foreach (var existingOutfit in dataManager.outfitsQueue)
+        {
+            // Verificar si existe la combinación de prendas (conjunto completo)
+            if (OutfitExists(existingOutfit, garments))
+            {
+                // TODO: Show Popup saying "This outfit currently exists on database"
+                Logger.Log(LogLevel.Error, Constants.DUPLICATED_OUTFIT_ERROR);
+                return Constants.DUPLICATED_OUTFIT;
+            }
+        }
+        return Constants.FALSE;
+    }
+
+    // Método que verifica si un conjunto de prendas ya existe en la base de datos
+    private static bool OutfitExists(Outfit existingOutfit, List<Garment> garments)
+    {
+        // Comparar cada prenda en el conjunto existente con las nuevas prendas
+        return GarmentExists(existingOutfit.TopID, garments[0], garments) &&
+               GarmentExists(existingOutfit.BottomID, garments[1], garments) &&
+               GarmentExists(existingOutfit.ShoesID, garments[2], garments);
+    }
+
+    private static bool GarmentExists(int existingGarmentID, Garment newGarment, List<Garment> garmentsList)
+    {
+        // Verificar si el garment ya existe y tiene el mismo ImagePath en la lista
+        return existingGarmentID != -1 &&
+               garmentsList.Any(existingGarment => existingGarment.GarmentID == existingGarmentID &&
+                                                   existingGarment.ImagePath == newGarment.ImagePath);
+    }
+
+    // Method used before trying to delete an outfit (to know if is need to be deleted its garments from DB)
+    private static bool IsGarmentAssociatedWithOutfit(int garmentID)
+    {
+        foreach (var outfit in dataManager.outfitsQueue)
+        {
+            if (outfit.TopID == garmentID || outfit.BottomID == garmentID || outfit.ShoesID == garmentID)
+            {
+                // El garment está asociado a este outfit
+                return true;
+            }
+        }
+
+        // El garment no está asociado a ningún outfit
+        return false;
+    }
+
+    /*---------------------------------- ROLLBACK METHODS -------------------------------------*/
+    public void BackupData()
+    {
+        // Llamar a BackupLocalData() y BackupDatabaseData() para respaldar ambos conjuntos de datos.
+        BackupDataLocalData();
+        BackupDataDBData();
+    }
+
+    private void BackupDataLocalData()
+    {
+        // Respaldar las estructuras de datos locales (garmentList y outfitsQueue).
+    }
+    private void BackupDataDBData()
+    {
+        // Respaldar los datos relevantes desde la base de datos SQL.
+    }
+    public void RollbackData()
+    {
+        // Implementar la lógica para revertir los datos en la base de datos SQL utilizando los respaldos de la base de datos.
+        // Limpiar las estructuras de datos locales.
+        // Restaurar los datos desde los respaldos locales.
+        RollbackLocalData();
+        RollbackDBData();
+    }
+
+    private void RollbackLocalData()
+    {
+        // Limpiar las estructuras de datos locales.
+        // Restaurar los datos desde los respaldos locales.
+     }
+    private void RollbackDBData()
+    {
+        // Implementar la lógica para revertir los datos en la base de datos SQL utilizando los respaldos de la base de datos.
+    }
+
 }
 
 /*--------------------------------- DATABASE TABLES --------------------------------- */
 // Database table that contains every single Garment
 [Table("Garment")]
-public class Garment
+public class Garment : IPrintable
 {
     [PrimaryKey, AutoIncrement]
     public int GarmentID { get; set; }
@@ -767,15 +875,30 @@ public class Garment
             }
         });
     }
+
+    public string PrintInfo(string methodName)
+    {
+        return methodName + "()_" + $"Garment ID: {GarmentID}, Name: {Name}, Type: {Type}, ImagePath: {ImagePath}";
+    }
 }
 
 // Database table that relates 3 garments in a unique outfit
 [Table("Outfit")]
-public class Outfit
+public class Outfit : IPrintable
 {
     [PrimaryKey, AutoIncrement]
     public int OutfitID { get; set; }
     public int TopID { get; set; }
     public int BottomID { get; set; }
     public int ShoesID { get; set; }
+
+    public string PrintInfo(string methodName)
+    {
+        return methodName + "()_" + $"Outfit ID: {OutfitID}, TopID: {TopID}, BottomID: {BottomID}, ShoesID: {ShoesID}";
+    }
+}
+
+public interface IPrintable
+{
+    string PrintInfo(string methodName);
 }
