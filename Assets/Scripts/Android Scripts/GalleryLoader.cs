@@ -92,6 +92,8 @@ public class GalleryLoader : MonoBehaviour
 
     private void Awake()
     {
+        Logger.Log(LogLevel.DeepTest, "GalleryLoader Awake() method called");
+
         if (_instance == null)
         {
             _instance = this;

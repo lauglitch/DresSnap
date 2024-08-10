@@ -78,7 +78,7 @@ public class ScreenTransition : MonoBehaviour
 
     private void Awake()
     {
-      
+        Logger.Log(LogLevel.DeepTest, "ScreenTransition Awake() method called");
     }
 
     void Start()
@@ -96,25 +96,27 @@ public class ScreenTransition : MonoBehaviour
         currentPageIndex = 0;
         outfitsPerPage = 3;
 
-        databaseManager = CoreManager.Instance.GetDatabaseManager();
-        dataManager = CoreManager.Instance.GetDataManager();
-        galleryLoader = CoreManager.Instance.GetGalleryLoader();
-        popupManager = CoreManager.Instance.GetPopupManager();
+        // Asegúrate de que `CoreManager.Instance` se accede después de que haya sido inicializado.
+        if (CoreManager.Instance != null)
+        {
+            //var databaseManager = CoreManager.Instance.GetDatabaseManager();
+            databaseManager = CoreManager.Instance.GetDatabaseManager();
+            dataManager = CoreManager.Instance.GetDataManager();
+            galleryLoader = CoreManager.Instance.GetGalleryLoader();
+            popupManager = CoreManager.Instance.GetPopupManager();
 
-        if (databaseManager == null)
-        {
-            Debug.LogError("Could not get DatabaseManager from CoreManager.Instance");
+            if (databaseManager == null)
+                Logger.Log(LogLevel.Error, "DatabaseManager from CoreManager.Instance is null");
+            if (dataManager == null)
+                Logger.Log(LogLevel.Error, "DataManager from CoreManager.Instance is null");
+            if (popupManager == null)
+                Logger.Log(LogLevel.Error, "PopupManager from CoreManager.Instance is null");
         }
-        if (dataManager == null)
-        {
-            Debug.LogError("Could not get DataManager from CoreManager.Instance");
-        }
-        if (popupManager == null)
-        {
-            Debug.LogError("Could not get PopupManager from CoreManager.Instance");
-        }
+        else
+            Logger.Log(LogLevel.Error, "CoreManager.Instance is null.");
 
-        Logger.Log(LogLevel.DeepTest, "ScreenTransition started.");
+
+        //Logger.Log(LogLevel.DeepTest, "ScreenTransition started.");
     }
 
     // ----------------------------------------------------------------------------------
@@ -148,10 +150,10 @@ public class ScreenTransition : MonoBehaviour
     public void CreateOutfit_MainMenuButton()
     {
         //foreach (Image image in galleryLoader.targetCreateImages)
-        //Debug.Log("ScreenTransition - targetCreateImages: " + image);
+        //Logger.Log(LogLevel.DeepTest, "ScreenTransition - targetCreateImages: " + image);
 
-        //galleryLoader.targetCreateImages.ForEach(image => Debug.Log("CreateOutfit_MainMenuButton - targetCreateImages: " + image.gameObject.name));
-        
+        //galleryLoader.targetCreateImages.ForEach(image => Logger.Log(LogLevel.DeepTest, "CreateOutfit_MainMenuButton - targetCreateImages: " + image.gameObject.name));
+
         if (galleryLoader != null)
         {
             List<Image> createImages = galleryLoader.targetCreateImages;
@@ -159,7 +161,7 @@ public class ScreenTransition : MonoBehaviour
         }
         else
         {
-            Debug.LogError("GalleryLoader reference is null!");
+            Logger.Log(LogLevel.Error, "GalleryLoader reference is null!");
         }
         
         createOutfitCanvas.SetActive(true);

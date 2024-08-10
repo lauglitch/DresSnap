@@ -7,7 +7,10 @@ public class DataManager: MonoBehaviour
     public List<Garment> garmentsList { get; set; }
     public Queue<Outfit> outfitsQueue { get; private set; }
 
-
+    private void Awake()
+    {
+        Logger.Log(LogLevel.DeepTest, "DataManager Awake() method called");
+    }
     // Constructor privado para evitar la instanciación directa
     private DataManager()
     {

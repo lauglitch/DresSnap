@@ -7,7 +7,10 @@ using System;
 
 public class DatabaseManager : MonoBehaviour
 {
+    private static DatabaseManager instance;
+
     private static string databasePath;
+    private static string databaseName;
     private static SQLiteConnection connection;
 
     private static DataManager dataManager;
@@ -17,19 +20,45 @@ public class DatabaseManager : MonoBehaviour
 
     public static bool[] areGarmentsGoingToBeSaved = new bool[3];
 
+    public static DatabaseManager Instance
+    {
+        get
+        {
+            //Logger.Log(LogLevel.DeepTest, "CoreManager Instance accessed");
+            if (instance == null)
+            {
+                instance = FindObjectOfType<DatabaseManager>();
+
+                if (instance == null)
+                {
+                    GameObject gameObject = new GameObject("CoreManager");
+                    instance = gameObject.AddComponent<DatabaseManager>();
+                }
+            }
+            return instance;
+        }
+    }
+
     void Awake()
     {
-    
-
+        Logger.Log(LogLevel.DeepTest, "DatabaseManager Awake() method called");
     }
 
     void Start()
     {
-        dataManager = CoreManager.Instance.GetDataManager();
+        //Logger.Log(LogLevel.DeepTest, "DatabaseManager Start called");
 
-        if (dataManager == null)
+        // Asegúrate de que `CoreManager.Instance` se está accediendo correctamente
+        var coreManager = CoreManager.Instance;
+        if (coreManager != null)
         {
-            Debug.LogError("Could not get DataManager from CoreManager.Instance");
+            // Accede al `DatabaseManager` desde `CoreManager`
+            var databaseManager = coreManager.GetDatabaseManager();
+            // Usa `databaseManager` como sea necesario
+        }
+        else
+        {
+            Logger.Log(LogLevel.Error, "CoreManager.Instance is not initialized.");
         }
 
         InitializeDatabase("myDatabase.db");
@@ -41,6 +70,8 @@ public class DatabaseManager : MonoBehaviour
     private void InitializeDatabase(string dbName)
     {
         string path = Application.persistentDataPath + "/" + dbName;
+        databasePath = path;
+        databaseName = dbName;
 
         // TODO: only uncomment in the end to use real Database
         //databasePath = Application.persistentDataPath + "/dressnapDatabase.db"; 
@@ -66,11 +97,11 @@ public class DatabaseManager : MonoBehaviour
     {
         Task.Run(async () =>
         {
-            await OpenConnectionAsync();
+            //await OpenConnectionAsync();
             await ClearTablesAsync(Constants.ALL);
             await CheckTablesExistOrCreate();
 
-            await InsertFirstDataAsync();
+            await InsertTestDataAsync();
 
             // Load all outftis from database when the app is starting
             await LoadOutfitsOnLocalDS();
@@ -107,7 +138,7 @@ public class DatabaseManager : MonoBehaviour
             if (!TableExists(Constants.GARMENT_TABLE_NAME))
             {
                 connection.CreateTable<Garment>();
-                Logger.Log(LogLevel.DeepTest, $"Garment table created on: {databasePath}");
+                Logger.Log(LogLevel.DeepTest, $"Garment table created on: {databaseName}");
             }
             else
             {
@@ -117,7 +148,7 @@ public class DatabaseManager : MonoBehaviour
             if (!TableExists(Constants.OUTFIT_TABLE_NAME))
             {
                 connection.CreateTable<Outfit>();
-                Logger.Log(LogLevel.DeepTest, $"Outfit table created on: {databasePath}");
+                Logger.Log(LogLevel.DeepTest, $"Outfit table created on: {databaseName}");
             }
             else
             {
@@ -139,7 +170,7 @@ public class DatabaseManager : MonoBehaviour
         return result != null;
     }
 
-    private async Task InsertFirstDataAsync()
+    private async Task InsertTestDataAsync()
     {
         await Task.Run(() =>
         {
@@ -179,8 +210,10 @@ public class DatabaseManager : MonoBehaviour
             }
             catch (SQLiteException e)
             {
-                Logger.Log(LogLevel.Error, "Error inserting data: " + e.Message);
+                Logger.Log(LogLevel.Error, "Error inserting test data: " + e.Message);
             }
+
+            Logger.Log(LogLevel.DeepTest, "Test data inserted succesfully on " + databaseName);
         });
     }
 

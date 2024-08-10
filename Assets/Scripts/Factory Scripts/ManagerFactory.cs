@@ -1,7 +1,7 @@
 using UnityEngine;
 public static class ManagerFactory
 {
-    public static ScreenTransition CreateScreenTransition()
+    /*public static ScreenTransition CreateScreenTransition()
     {
         GameObject screenTransitionObject = new GameObject("ScreenTransition");
         return screenTransitionObject.AddComponent<ScreenTransition>();
@@ -36,5 +36,6 @@ public static class ManagerFactory
         GameObject dataManagerObject = new GameObject("DataManager");
         return dataManagerObject.AddComponent<DataManager>();
     }
+    */
 }
 

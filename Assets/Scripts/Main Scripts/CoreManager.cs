@@ -2,11 +2,12 @@ using UnityEngine;
 
 public class CoreManager : MonoBehaviour
 {
-    private DatabaseManager databaseManagerInstance;
-    private BackupDataManager backupDataManagerInstance;
-    private GalleryLoader galleryLoaderInstance;
-    private PopupManager popupManagerInstance;
-    private DataManager dataManagerInstance;
+    public DatabaseManager databaseManagerInstance;
+    public BackupDataManager backupDataManagerInstance;
+    public GalleryLoader galleryLoaderInstance;
+    public PopupManager popupManagerInstance;
+    public DataManager dataManagerInstance;
+    public PermissionManager permisionManagerInstance;
 
     private static CoreManager instance;
 
@@ -16,19 +17,12 @@ public class CoreManager : MonoBehaviour
         {
             if (instance == null)
             {
-                // Busca un objeto existente en la escena con CoreManager
                 instance = FindObjectOfType<CoreManager>();
 
                 if (instance == null)
                 {
-                    // Si no existe, crea uno nuevo
                     GameObject gameObject = new GameObject("CoreManager");
                     instance = gameObject.AddComponent<CoreManager>();
-                }
-                else
-                {
-                    // Si encontró uno, lo asigna
-                    instance.InitializeManagers();
                 }
             }
             return instance;
@@ -37,13 +31,13 @@ public class CoreManager : MonoBehaviour
 
     private void Awake()
     {
+        Logger.Log(LogLevel.DeepTest, "CoreManager Awake() method called");
+
         if (instance == null)
         {
             instance = this;
             DontDestroyOnLoad(gameObject);
             InitializeManagers();
-
-            Logger.Log(LogLevel.DeepTest, "CoreManager started.");
         }
         else if (instance != this)
         {
@@ -53,26 +47,21 @@ public class CoreManager : MonoBehaviour
 
     private void InitializeManagers()
     {
-        if (databaseManagerInstance == null)
-            databaseManagerInstance = gameObject.AddComponent<DatabaseManager>();
+        /*
+        databaseManagerInstance = gameObject.AddComponent<DatabaseManager>();
+        backupDataManagerInstance = gameObject.AddComponent<BackupDataManager>();
 
-        if (backupDataManagerInstance == null)
-            backupDataManagerInstance = gameObject.AddComponent<BackupDataManager>();
-
+        galleryLoaderInstance = FindObjectOfType<GalleryLoader>();
         if (galleryLoaderInstance == null)
         {
-            galleryLoaderInstance = FindObjectOfType<GalleryLoader>();
-            if (galleryLoaderInstance == null)
-            {
-                 Logger.Log(LogLevel.Error, "GalleryLoader instance not found in the scene.");
-            }
+            Logger.Log(LogLevel.Error, "GalleryLoader instance not found in the scene.");
         }
 
-        if (popupManagerInstance == null)
-            popupManagerInstance = gameObject.AddComponent<PopupManager>();
+        popupManagerInstance = gameObject.AddComponent<PopupManager>();
+        dataManagerInstance = gameObject.AddComponent<DataManager>();
 
-        if (dataManagerInstance == null)
-            dataManagerInstance = gameObject.AddComponent<DataManager>();
+        Logger.Log(LogLevel.DeepTest, "Managers initialized.");
+        */
     }
 
     public DatabaseManager GetDatabaseManager() => databaseManagerInstance;
@@ -80,4 +69,5 @@ public class CoreManager : MonoBehaviour
     public GalleryLoader GetGalleryLoader() => galleryLoaderInstance;
     public PopupManager GetPopupManager() => popupManagerInstance;
     public DataManager GetDataManager() => dataManagerInstance;
+    public PermissionManager GetPermissionManager() => permisionManagerInstance;
 }
