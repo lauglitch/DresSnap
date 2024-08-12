@@ -15,7 +15,7 @@ public class BackupDataManager: MonoBehaviour
 
     void Awake()
     {
-        Logger.Log(LogLevel.DeepTest, "BackupDataManager Awake() method called");
+        Logger.Log(LogLevel.Instances, "BackupDataManager Awake() method called");
     }
 
     public void SetDataManager(DataManager dm)

@@ -31,7 +31,7 @@ public class PermissionManager : MonoBehaviour
         else
         {
             // Los permisos de cámara ya han sido otorgados
-            Logger.Log(LogLevel.DeepTest, "Camera permits have already been granted.");
+            Logger.Log(LogLevel.Success, "Camera permits have already been granted.");
         }
     }
 }

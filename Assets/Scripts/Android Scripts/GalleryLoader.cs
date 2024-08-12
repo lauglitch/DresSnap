@@ -92,7 +92,7 @@ public class GalleryLoader : MonoBehaviour
 
     private void Awake()
     {
-        Logger.Log(LogLevel.DeepTest, "GalleryLoader Awake() method called");
+        Logger.Log(LogLevel.Instances, "GalleryLoader Awake() method called");
 
         if (_instance == null)
         {
@@ -367,8 +367,6 @@ public class GalleryLoader : MonoBehaviour
                 }
             }
         }
-
-      
     }
 
     public string LoadImageFromExplorer(string type)

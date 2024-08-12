@@ -3,21 +3,39 @@ using UnityEngine;
 
 public class DataManager: MonoBehaviour
 {
+    public static DataManager instance { get; set; }
+
     // Estructuras de datos compartidas
+    public Queue<Outfit> outfitsQueue { get; set; }
     public List<Garment> garmentsList { get; set; }
-    public Queue<Outfit> outfitsQueue { get; private set; }
+
+    public DataManager()
+    {
+        outfitsQueue = new Queue<Outfit>();
+        garmentsList = new List<Garment>();
+    }
 
     private void Awake()
     {
-        Logger.Log(LogLevel.DeepTest, "DataManager Awake() method called");
+        Logger.Log(LogLevel.Instances, "CoreManager Awake() method called");
+
+        if (instance == null)
+        {
+            instance = this;
+        }
+        else if (instance != this)
+        {
+            Destroy(gameObject);
+        }
+
     }
-    // Constructor privado para evitar la instanciación directa
-    private DataManager()
+
+    private void Start()
     {
-        // Inicialización de las estructuras de datos
-        garmentsList = new List<Garment>();
-        outfitsQueue = new Queue<Outfit>();
+        Logger.Log(LogLevel.Instances, "DataManager Start() method called");
     }
+
+    // Constructor privado para evitar la instanciación directa
 
     // Métodos para actualizar las estructuras de datos
     public void UpdateGarments(List<Garment> updatedGarments)

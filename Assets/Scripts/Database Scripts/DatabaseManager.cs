@@ -20,28 +20,22 @@ public class DatabaseManager : MonoBehaviour
 
     public static bool[] areGarmentsGoingToBeSaved = new bool[3];
 
-    public static DatabaseManager Instance
-    {
-        get
-        {
-            //Logger.Log(LogLevel.DeepTest, "CoreManager Instance accessed");
-            if (instance == null)
-            {
-                instance = FindObjectOfType<DatabaseManager>();
-
-                if (instance == null)
-                {
-                    GameObject gameObject = new GameObject("CoreManager");
-                    instance = gameObject.AddComponent<DatabaseManager>();
-                }
-            }
-            return instance;
-        }
-    }
-
     void Awake()
     {
-        Logger.Log(LogLevel.DeepTest, "DatabaseManager Awake() method called");
+        if (instance == null)
+        {
+            instance = FindObjectOfType<DatabaseManager>();
+
+            if (instance == null)
+            {
+                GameObject gameObject = new GameObject("CoreManager");
+                instance = gameObject.AddComponent<DatabaseManager>();
+            }
+        }
+
+        dataManager = DataManager.instance;
+
+        Logger.Log(LogLevel.Instances, "DatabaseManager Awake() method called");
     }
 
     void Start()
@@ -92,21 +86,30 @@ public class DatabaseManager : MonoBehaviour
     {
         dataManager = dm;
     }
-
-    private void StartTestingData()
+    private async void StartTestingData()
     {
-        Task.Run(async () =>
+        try
         {
-            //await OpenConnectionAsync();
-            await ClearTablesAsync(Constants.ALL);
-            await CheckTablesExistOrCreate();
+            await Task.Run(async () =>
+            {
 
-            await InsertTestDataAsync();
+                //await OpenConnectionAsync();
+                await ClearTablesAsync(Constants.ALL);  //ok
+                await CheckTablesExistOrCreate();       //ok
 
-            // Load all outftis from database when the app is starting
-            await LoadOutfitsOnLocalDS();
-            await LoadGarmentsOnLocalDS();
-        });
+                await InsertTestDataAsync();            //ok
+
+                await LoadOutfitsOnLocalDS();           //
+                await LoadGarmentsOnLocalDS();          //
+
+                Logger.Log(LogLevel.Success, "Test Data started succesfully.");
+                //Logger.Log(LogLevel.DeepTest, "Test Data started succesfully.");
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.Log(LogLevel.Error, $"Exception in StartTestingData(): {ex.Message}");
+        }
     }
 
     /*---------------------------------- INITIALIZE DATABASE ----------------------------------*/
@@ -138,7 +141,7 @@ public class DatabaseManager : MonoBehaviour
             if (!TableExists(Constants.GARMENT_TABLE_NAME))
             {
                 connection.CreateTable<Garment>();
-                Logger.Log(LogLevel.DeepTest, $"Garment table created on: {databaseName}");
+                Logger.Log(LogLevel.DBCRUD, $"Garment table created on: {databaseName}");
             }
             else
             {
@@ -148,7 +151,7 @@ public class DatabaseManager : MonoBehaviour
             if (!TableExists(Constants.OUTFIT_TABLE_NAME))
             {
                 connection.CreateTable<Outfit>();
-                Logger.Log(LogLevel.DeepTest, $"Outfit table created on: {databaseName}");
+                Logger.Log(LogLevel.DBCRUD, $"Outfit table created on: {databaseName}");
             }
             else
             {
@@ -213,7 +216,7 @@ public class DatabaseManager : MonoBehaviour
                 Logger.Log(LogLevel.Error, "Error inserting test data: " + e.Message);
             }
 
-            Logger.Log(LogLevel.DeepTest, "Test data inserted succesfully on " + databaseName);
+            Logger.Log(LogLevel.DBCRUD, "Test data inserted succesfully on " + databaseName);
         });
     }
 
@@ -264,11 +267,13 @@ public class DatabaseManager : MonoBehaviour
                     if (TableExists(Constants.GARMENT_TABLE_NAME))
                     {
                         connection.DropTable<Garment>();
-                        Logger.Log(LogLevel.DeepTest, "Garment table dropped successfully.");
+                        Logger.Log(LogLevel.Success, "Garment table dropped successfully.");
+                        //Logger.Log(LogLevel.DeepTest, "Garment table dropped successfully.");
                     }
                     else
                     {
-                        Logger.Log(LogLevel.Warning, "Garment table was not dropped because it doesn't exist.");
+                        //Logger.Log(LogLevel.Warning, "Garment table was not dropped because it doesn't exist.");
+                        Logger.Log(LogLevel.DeepTest, "Garment table was not dropped because it doesn't exist.");
                     }
                 }
                 else if (tableName.Equals(Constants.OUTFIT_TABLE_NAME))
@@ -276,11 +281,13 @@ public class DatabaseManager : MonoBehaviour
                     if (TableExists(Constants.OUTFIT_TABLE_NAME))
                     {
                         connection.DropTable<Outfit>();
-                        Logger.Log(LogLevel.DeepTest, "Outfit table dropped successfully.");
+                        Logger.Log(LogLevel.Success, "Outfit table dropped successfully.");
+                        //Logger.Log(LogLevel.DeepTest, "Outfit table dropped successfully.");
                     }
                     else
                     {
-                        Logger.Log(LogLevel.Warning, "Outfit table was not dropped because it doesn't exist.");
+                        //Logger.Log(LogLevel.Warning, "Outfit table was not dropped because it doesn't exist.");
+                        Logger.Log(LogLevel.DeepTest, "Outfit table was not dropped because it doesn't exist.");
                     }
                 }
                 else if (tableName.Equals(Constants.ALL))
@@ -288,7 +295,9 @@ public class DatabaseManager : MonoBehaviour
                     // Recursive calls
                     ClearTablesAsync(Constants.GARMENT_TABLE_NAME).Wait();
                     ClearTablesAsync(Constants.OUTFIT_TABLE_NAME).Wait();
-                    //Logger.Log(LogLevel.Success, "All tables dropped successfully.");
+
+                    Logger.Log(LogLevel.Success, "All tables dropped successfully.");
+                    //Logger.Log(LogLevel.DeepTest, "All tables dropped successfully.");
                 }
                 else
                 {
@@ -542,6 +551,9 @@ public class DatabaseManager : MonoBehaviour
 
     public static async Task LoadOutfitsOnLocalDS()
     {
+        if (dataManager == null)
+            Logger.Log(LogLevel.DeepTest,"dataManager is null");
+
         try
         {
             var outfits = await GetAllOutfitsAsync();
@@ -550,13 +562,13 @@ public class DatabaseManager : MonoBehaviour
             {
                 dataManager.outfitsQueue.Enqueue(outfit);
             }
-
-            Logger.Log(LogLevel.DeepTest, "Local outfits updated successfully on queue");
         }
         catch (SQLiteException e)
         {
             Logger.Log(LogLevel.Error, $"Error updating local outfits queue: {e.Message}");
         }
+
+        Logger.Log(LogLevel.Success, "Local outfits updated successfully on queue.");
     }
 
     public static async Task LoadGarmentsOnLocalDS()
@@ -568,13 +580,13 @@ public class DatabaseManager : MonoBehaviour
             {
                 dataManager.garmentsList.Add(garment);
             }
-
-            Logger.Log(LogLevel.DeepTest, "Local garments updated successfully on list");
         }
         catch (SQLiteException e)
         {
             Logger.Log(LogLevel.Error, $"Error updating local garments list: {e.Message}");
         }
+
+        Logger.Log(LogLevel.Success, "Local garments updated successfully on list");
     }
 
     public static Outfit PickRandomLocalOutfit()
@@ -769,7 +781,7 @@ public class DatabaseManager : MonoBehaviour
         foreach (var garment in garments)
         {
             // Verificar si la ruta de imagen ya está en el conjunto
-            if (!uniqueNames.Add(garment.Name))
+            if (!garment.Name.Equals("") && !uniqueNames.Add(garment.Name))
             {
                 Logger.Log(LogLevel.Error, $"Duplicate Name found: {garment.Name}");
                 return false;
@@ -851,7 +863,6 @@ public class DatabaseManager : MonoBehaviour
         BackupDataLocalData();
         BackupDataDBData();
     }
-
     private void BackupDataLocalData()
     {
         // Respaldar las estructuras de datos locales (garmentList y outfitsQueue).
@@ -868,7 +879,6 @@ public class DatabaseManager : MonoBehaviour
         RollbackLocalData();
         RollbackDBData();
     }
-
     private void RollbackLocalData()
     {
         // Limpiar las estructuras de datos locales.
@@ -878,7 +888,6 @@ public class DatabaseManager : MonoBehaviour
     {
         // Implementar la lógica para revertir los datos en la base de datos SQL utilizando los respaldos de la base de datos.
     }
-
 }
 
 /*--------------------------------- DATABASE TABLES --------------------------------- */

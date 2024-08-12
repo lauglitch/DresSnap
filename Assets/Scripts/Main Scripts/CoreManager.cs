@@ -2,14 +2,14 @@ using UnityEngine;
 
 public class CoreManager : MonoBehaviour
 {
+    private static CoreManager instance;
+
     public DatabaseManager databaseManagerInstance;
     public BackupDataManager backupDataManagerInstance;
     public GalleryLoader galleryLoaderInstance;
     public PopupManager popupManagerInstance;
     public DataManager dataManagerInstance;
     public PermissionManager permisionManagerInstance;
-
-    private static CoreManager instance;
 
     public static CoreManager Instance
     {
@@ -31,12 +31,12 @@ public class CoreManager : MonoBehaviour
 
     private void Awake()
     {
-        Logger.Log(LogLevel.DeepTest, "CoreManager Awake() method called");
+        Logger.Log(LogLevel.Instances, "CoreManager Awake() method called");
 
         if (instance == null)
         {
             instance = this;
-            DontDestroyOnLoad(gameObject);
+            //DontDestroyOnLoad(gameObject);
             InitializeManagers();
         }
         else if (instance != this)
@@ -47,6 +47,9 @@ public class CoreManager : MonoBehaviour
 
     private void InitializeManagers()
     {
+        databaseManagerInstance = FindObjectOfType<DatabaseManager>();
+        dataManagerInstance = FindObjectOfType<DataManager>();
+
         /*
         databaseManagerInstance = gameObject.AddComponent<DatabaseManager>();
         backupDataManagerInstance = gameObject.AddComponent<BackupDataManager>();

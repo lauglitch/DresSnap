@@ -10,8 +10,9 @@ public enum LogLevel
     Error,          // Mensajes de error
     Test,           // Mensajes de prueba (solo para desarrollo)
     DeepTest,       // Mensajes de prueba detallada (solo para desarrollo)
+    Instances,      // Mensajes para info sobre creación e instanciación de objetos (solo para desarrollo)
     DBConnection,   // Mensajes para info sobre conexión a la BD (solo para desarrollo)
-    //DBCRUD          // Mensajes para proceso CRUD de la BD (solo para desarrollo)
+    DBCRUD          // Mensajes para proceso CRUD de la BD (solo para desarrollo)
 }
 
 public static class Logger
@@ -24,10 +25,10 @@ public static class Logger
         LogLevel.Error,
 
         //LogLevel.Test,
-        LogLevel.DeepTest,
+        //LogLevel.DeepTest,
 
-        LogLevel.DBConnection,
-        //LogLevel.DBCRUD,
+        //LogLevel.DBConnection,
+        LogLevel.DBCRUD,
     };
 
     public static void Log(LogLevel level, string message)

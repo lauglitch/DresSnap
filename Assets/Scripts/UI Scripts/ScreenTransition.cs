@@ -32,9 +32,13 @@ public class ScreenTransition : MonoBehaviour
     public GameObject topName_Input;
     public GameObject bottomName_Input;
     public GameObject shoesName_Input;
-    private bool topNameInputInteractable = true;
-    private bool bottomNameInputInteractable = true;
-    private bool shoesNameInputInteractable = true;
+    //public GameObject topName_InputText;
+    //public GameObject bottomName_InputText;
+    //public GameObject shoesName_InputText;
+
+    //private bool topNameInputInteractable = true;
+    //private bool bottomNameInputInteractable = true;
+    //private bool shoesNameInputInteractable = true;
     //
 
     // Only on See Menu
@@ -78,7 +82,7 @@ public class ScreenTransition : MonoBehaviour
 
     private void Awake()
     {
-        Logger.Log(LogLevel.DeepTest, "ScreenTransition Awake() method called");
+        Logger.Log(LogLevel.Instances, "ScreenTransition Awake() method called");
     }
 
     void Start()
@@ -99,7 +103,6 @@ public class ScreenTransition : MonoBehaviour
         // Asegúrate de que `CoreManager.Instance` se accede después de que haya sido inicializado.
         if (CoreManager.Instance != null)
         {
-            //var databaseManager = CoreManager.Instance.GetDatabaseManager();
             databaseManager = CoreManager.Instance.GetDatabaseManager();
             dataManager = CoreManager.Instance.GetDataManager();
             galleryLoader = CoreManager.Instance.GetGalleryLoader();
@@ -114,9 +117,6 @@ public class ScreenTransition : MonoBehaviour
         }
         else
             Logger.Log(LogLevel.Error, "CoreManager.Instance is null.");
-
-
-        //Logger.Log(LogLevel.DeepTest, "ScreenTransition started.");
     }
 
     // ----------------------------------------------------------------------------------
@@ -154,16 +154,6 @@ public class ScreenTransition : MonoBehaviour
 
         //galleryLoader.targetCreateImages.ForEach(image => Logger.Log(LogLevel.DeepTest, "CreateOutfit_MainMenuButton - targetCreateImages: " + image.gameObject.name));
 
-        if (galleryLoader != null)
-        {
-            List<Image> createImages = galleryLoader.targetCreateImages;
-            galleryLoader.SetDefaultImageAndText(targetImages: createImages, targetTexts: new List<GameObject>());
-        }
-        else
-        {
-            Logger.Log(LogLevel.Error, "GalleryLoader reference is null!");
-        }
-        
         createOutfitCanvas.SetActive(true);
 
         mainMenuPanelCanvas.SetActive(false);
@@ -284,6 +274,7 @@ public class ScreenTransition : MonoBehaviour
         switch (type)
         {
             case Constants.TOP_FIELD:
+                /*
                 imagePath = galleryLoader.LoadImageFromExplorer(Constants.TOP_FIELD);
 
                 if (dataManager != null)
@@ -308,7 +299,22 @@ public class ScreenTransition : MonoBehaviour
                 else if (!imagePath.Equals(Constants.UNDEFINED))
                 {
                     topNameInputInteractable = true;
+                }*/
+                imagePath = galleryLoader.LoadImageFromExplorer(Constants.TOP_FIELD);
+
+                imagePathExists = dataManager.garmentsList.Any(garment => garment.ImagePath.Equals(imagePath));
+
+                if (imagePathExists)
+                {
+                    foreach (Garment garment in dataManager.garmentsList)
+                        if (garment.ImagePath.Equals(imagePath))
+                        {
+                            topName_Input.GetComponent<TMP_InputField>().text = garment.Name;
+                            topName_Input.GetComponent<TMP_InputField>().interactable = false;
+                        }
                 }
+                else
+                    topName_Input.GetComponent<TMP_InputField>().interactable = true;
 
                 break;
             case Constants.BOTTOM_FIELD:
@@ -320,7 +326,10 @@ public class ScreenTransition : MonoBehaviour
                 {
                     foreach (Garment garment in dataManager.garmentsList)
                         if (garment.ImagePath.Equals(imagePath))
+                        {
+                            bottomName_Input.GetComponent<TMP_InputField>().text = garment.Name;
                             bottomName_Input.GetComponent<TMP_InputField>().interactable = false;
+                        }
                 }
                 else
                     bottomName_Input.GetComponent<TMP_InputField>().interactable = true;
@@ -335,7 +344,10 @@ public class ScreenTransition : MonoBehaviour
                 { 
                     foreach (Garment garment in dataManager.garmentsList)
                         if (garment.ImagePath.Equals(imagePath))
+                        {
+                            shoesName_Input.GetComponent<TMP_InputField>().text = garment.Name;
                             shoesName_Input.GetComponent<TMP_InputField>().interactable = false;
+                        }
                 }
                 else
                     shoesName_Input.GetComponent<TMP_InputField>().interactable = true;
@@ -545,17 +557,39 @@ public class ScreenTransition : MonoBehaviour
         }
 
         // IMPORTANT TO UPDATE LOCAL DATA STRUCTURES TO WORK WITH CURRENT DATA
-        await DatabaseManager.UpdateLocalDataStructures();
+        if (canInsertOutfit)
+            await DatabaseManager.UpdateLocalDataStructures();
 
-        // Show the outfit saved popup
+        // Show the outfit saved popup with succcess or error message
         outfitSavedPopup.GetComponent<PopupManager>().ShowPopup();
     }
 
     public void ok_CreateMenuButton()
     {
-        // TODO: Reset Images and Inputs on Create Menu
-
+        // Reset all InputFields
+        topName_Input.GetComponent<TMP_InputField>().text = Constants.DEFAULT_INPUT_NAME;
+        bottomName_Input.GetComponent<TMP_InputField>().text = Constants.DEFAULT_INPUT_NAME;
+        shoesName_Input.GetComponent<TMP_InputField>().text = Constants.DEFAULT_INPUT_NAME;
+        topName_Input.GetComponent<TMP_InputField>().interactable = true;
+        bottomName_Input.GetComponent<TMP_InputField>().interactable = true;
+        shoesName_Input.GetComponent<TMP_InputField>().interactable = true;
         outfitSavedPopup.GetComponent<PopupManager>().HidePopup();
+
+        // Reset all Images
+        if (galleryLoader != null)
+        {
+            List<Image> createImages = galleryLoader.targetCreateImages;
+            galleryLoader.SetDefaultImageAndText(targetImages: createImages, targetTexts: new List<GameObject>());
+        }
+        else
+        {
+            Logger.Log(LogLevel.Error, "GalleryLoader reference is null!");
+        }
+
+        // Close popup and exit CREATE MENU automatically
+        mainMenuPanelCanvas.SetActive(true);
+        createOutfitCanvas.SetActive(false);
+
     }
 
     public void yes_CreateMenuButton()

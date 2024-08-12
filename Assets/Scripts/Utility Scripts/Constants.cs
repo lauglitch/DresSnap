@@ -45,6 +45,7 @@ public class Constants
     public const string DEFAULT_TEXT = "Default text";
     public const string MISSING_GARMENTS = "missingGarments";
     public const string DUPLICATED_OUTFIT = "duplicatedOutfit";
+    public const string DEFAULT_INPUT_NAME = "Name: ";
 
     // UI FEEDBACK (no errors)
     public const string TOTAL_PAGES_SEE_MENU = "Totalpages on See Menu: ";
