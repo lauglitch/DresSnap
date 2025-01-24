@@ -29,4 +29,5 @@ Description
 Developed with Unity3D and SQLite
 
 ## License
-GNU General Public License
+This software is licensed under an End-User License Agreement (EULA). By downloading or using this software, you agree to the terms outlined [here](EULA.md).
+
