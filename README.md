@@ -1,6 +1,9 @@
 # DresSnap
 Description
 
+## Status
+This project is currently under development. By accessing or using any part of this project, you agree to the terms of the [End-User License Agreement (EULA)](EULA.md).
+
 ## Web
 [lauglitch.com](https://www.lauglitch.com)
 
@@ -8,7 +11,6 @@ Description
 1.0
 
 ## Instructions
-
 
 ## Flowchart
 ![Diagrama de Flujo - DresSnap](https://github.com/lauglitch/DresSnap/assets/98267186/1b70f09f-4b07-4d09-9916-296fad11ddb2)
